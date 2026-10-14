@@ -1,0 +1,3172 @@
+<!DOCTYPE html>
+<html lang="uk" class="h-full scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+  <meta name="author" content="Роман Берник (@bro9301)">
+  <title>Степанський академічний ліцей 3D Shop — Офіційний мерч STEM-хабу</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Inter & Montserrat -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Three.js Core, OrbitControls & STLLoader -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            heading: ['Montserrat', 'sans-serif']
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              200: '#bfdbfe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Підтримка Safe Area (вирізи екрана, нижні плашки жестів iOS/Android) */
+    :root {
+      --sat: env(safe-area-inset-top, 0px);
+      --sab: env(safe-area-inset-bottom, 0px);
+    }
+    body {
+      padding-top: var(--sat);
+      padding-bottom: var(--sab);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .grid-pattern {
+      background-size: 20px 20px;
+      background-image: linear-gradient(to right, rgba(59, 130, 246, 0.05) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    #stl-canvas-container canvas {
+      touch-action: none; /* Запобігає конфлікту скролу сторінки під час обертання 3D */
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-full flex flex-col antialiased selection:bg-brand-600 selection:text-white pb-20 md:pb-0">
+
+  <!-- Оголошення місії -->
+  <aside class="bg-slate-950 text-white text-[11px] sm:text-xs py-2 px-3 text-center font-medium shadow-inner flex items-center justify-center gap-2 flex-wrap border-b border-blue-900/40">
+    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-extrabold uppercase tracking-wider border border-amber-400/30">
+      <i data-lucide="printer" class="w-3 h-3"></i> STEM САЛ
+    </span>
+    <span class="leading-tight">Кошти йдуть на котушки еко-пластику та підтримку ЗСУ 🇺🇦</span>
+    <span class="text-blue-300/80 text-[10px] hidden sm:inline">• смт Степань</span>
+  </aside>
+
+  <!-- Головна навігація -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 sm:h-20 gap-3">
+        
+        <!-- Логотип -->
+        <a href="#" class="flex items-center gap-2.5 group shrink-0">
+          <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-700 to-indigo-800 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform duration-200">
+            <span class="font-heading font-black text-xs sm:text-sm tracking-tight text-amber-300">САЛ</span>
+          </div>
+          <div class="flex flex-col">
+            <div class="flex items-center gap-1.5">
+              <span class="text-sm sm:text-lg font-heading font-black tracking-tight text-slate-900 leading-none">СТЕПАНСЬКИЙ ЛІЦЕЙ</span>
+              <span class="px-1 py-0.2 rounded text-[9px] font-black uppercase bg-blue-100 text-blue-700 border border-blue-200">3D</span>
+            </div>
+            <span class="text-[10px] sm:text-[11px] text-slate-500 font-medium tracking-tight mt-0.5">Мейкерський хаб ліцею</span>
+          </div>
+        </a>
+
+        <!-- Пошук для десктопів -->
+        <div class="flex-1 max-w-md hidden md:block">
+          <div class="relative">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            <input 
+              type="text" 
+              id="search-input" 
+              placeholder="Шукати брелок, замок, підставку..." 
+              class="w-full pl-10 pr-9 py-2 bg-slate-100/90 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all shadow-inner"
+            >
+            <button id="clear-search-btn" aria-label="Очистити" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 hidden">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Дії та кнопки панелі -->
+        <div class="flex items-center gap-1.5 sm:gap-2.5">
+          <a 
+            href="https://t.me/stepan_lyceum_3d_bot" 
+            id="header-tg-link"
+            target="_blank"
+            class="p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition flex items-center gap-1.5"
+            title="Telegram-бот для замовлень"
+          >
+            <i data-lucide="send" class="w-4 h-4 text-blue-600"></i>
+            <span class="hidden lg:inline">Telegram-бот</span>
+          </a>
+
+          <button 
+            onclick="openAdminAccessModal()" 
+            class="p-2 sm:px-3 sm:py-2 rounded-xl text-xs font-semibold text-slate-600 hover:text-blue-700 hover:bg-blue-50 border border-slate-200 transition flex items-center gap-1.5"
+            title="Адмінка"
+          >
+            <i data-lucide="settings" class="w-4 h-4 text-slate-500"></i>
+            <span class="hidden lg:inline">Адмінка</span>
+          </button>
+
+          <button 
+            onclick="toggleWishlistModal()"
+            aria-label="Збережені"
+            class="relative p-2 sm:p-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 transition" 
+          >
+            <i data-lucide="heart" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+            <span id="wishlist-count-badge" class="absolute -top-1 -right-1 bg-rose-500 text-white font-bold text-[9px] w-4 h-4 rounded-full flex items-center justify-center border border-white hidden">0</span>
+          </button>
+
+          <button 
+            id="open-cart-btn" 
+            aria-label="Кошик"
+            class="relative flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-md font-semibold text-xs sm:text-sm transition active:scale-95" 
+          >
+            <i data-lucide="shopping-cart" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+            <span class="hidden sm:inline">Кошик</span>
+            <span id="cart-count-badge" class="bg-white text-blue-700 font-extrabold text-[11px] px-1.5 py-0.2 rounded-full min-w-[18px] text-center">0</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Мобільне поле пошуку під хедером -->
+      <div class="pb-2.5 pt-1 md:hidden">
+        <div class="relative">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+          <input 
+            type="text" 
+            id="mobile-search-input" 
+            placeholder="Пошук 3D-моделей ліцею..." 
+            class="w-full pl-9 pr-8 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+          >
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Банер -->
+  <section class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-2 w-full">
+    <div class="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-slate-900 text-white p-5 sm:p-10 shadow-xl border border-slate-800 grid-pattern">
+      <div class="relative z-10 max-w-3xl flex flex-col items-start gap-3 sm:gap-4">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          Степанський ліцей • Сарненщина
+        </div>
+        
+        <h1 class="text-2xl sm:text-4xl lg:text-5xl font-heading font-black tracking-tight leading-tight">
+          3D-мерч, створений ліцеїстами.
+        </h1>
+        
+        <p class="text-slate-300 text-xs sm:text-sm sm:leading-relaxed">
+          Кожен виріб розроблено та надруковано на базі STEM-лабораторії ліцею з екологічного PLA-пластику. Оглядайте у 3D прямо в телефоні та замовляйте з власним гравіюванням!
+        </p>
+
+        <div class="flex flex-wrap gap-2.5 pt-2 w-full sm:w-auto">
+          <a href="#catalog" class="flex-1 sm:flex-none justify-center px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm transition shadow-md flex items-center gap-1.5 active:scale-95 text-center">
+            Вітрина
+            <i data-lucide="arrow-down" class="w-3.5 h-3.5"></i>
+          </a>
+          <button onclick="openCustomOrderModal()" class="flex-1 sm:flex-none justify-center px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs sm:text-sm transition flex items-center gap-1.5">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i>
+            Свій напис
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Каталог -->
+  <main id="catalog" class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 w-full flex-1">
+    
+    <!-- Панель фільтрів та горизонтальні пігулки -->
+    <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 pb-4 border-b border-slate-200">
+      
+      <!-- Горизонтальний скрол категорій без зламу на смартфонах -->
+      <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 -mx-3 px-3 sm:mx-0 sm:px-0" id="category-pills">
+        <button data-cat="all" class="cat-pill active px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-blue-600 text-white shadow-sm shrink-0">
+          Всі вироби (29)
+        </button>
+        <button data-cat="Брелоки та аксесуари" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 shrink-0">
+          🔑 Брелоки
+        </button>
+        <button data-cat="Органайзери та підставки" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 shrink-0">
+          📱 Підставки & Органайзери
+        </button>
+        <button data-cat="Деталі FPV та дронів" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 shrink-0">
+          🚁 Дрони & FPV
+        </button>
+        <button data-cat="Сувеніри та мініатюри" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 shrink-0">
+          🏰 Фігурки & Моделі
+        </button>
+        <button data-cat="Декор та побут" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 shrink-0">
+          🏺 Декор & Дім
+        </button>
+        <button data-cat="Головоломки та антистрес" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 shrink-0">
+          🧩 Антистрес
+        </button>
+      </div>
+
+      <!-- Сортування та повзунок ціни -->
+      <div class="flex items-center gap-2.5 justify-between sm:justify-end flex-wrap">
+        <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200 text-xs">
+          <span class="text-slate-500 font-medium">До:</span>
+          <span id="price-range-label" class="font-extrabold text-blue-600">600 ₴</span>
+          <input 
+            type="range" 
+            id="price-range" 
+            min="30" 
+            max="600" 
+            value="600" 
+            step="10" 
+            class="w-20 sm:w-28 accent-blue-600 cursor-pointer"
+          >
+        </div>
+
+        <div class="relative min-w-[140px] flex-1 sm:flex-none">
+          <select id="sort-select" aria-label="Сортування" class="w-full appearance-none bg-white border border-slate-200 rounded-xl px-3 py-1.5 pr-7 text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-blue-500">
+            <option value="popular">Популярні</option>
+            <option value="price-asc">Від дешевших</option>
+            <option value="price-desc">Від дорожчих</option>
+            <option value="rating">За оцінкою</option>
+          </select>
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Лічильник результатів -->
+    <div class="py-3 flex items-center justify-between text-xs text-slate-500">
+      <div id="results-count" class="flex items-center gap-1"><span class="font-bold text-slate-700">Всі вироби:</span> <strong class="text-blue-600 font-black">29 шт.</strong></div>
+      <button id="reset-filters-btn" class="text-blue-600 hover:underline font-bold hidden">
+        Скинути
+      </button>
+    </div>
+
+    <!-- Адаптивна сітка карток (1 колонка на вузьких смартфонах, 2 на середніх, 3 на планшетах, 4 на десктопі) -->
+    <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6"></div>
+
+    <!-- Порожній стан -->
+    <div id="empty-state" class="hidden py-12 text-center">
+      <div class="w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-3">
+        <i data-lucide="search-x" class="w-6 h-6"></i>
+      </div>
+      <h3 class="text-sm sm:text-base font-bold text-slate-800">Нічого не знайдено</h3>
+      <button onclick="resetAllFilters()" class="mt-3 px-4 py-1.5 rounded-xl bg-blue-600 text-white font-bold text-xs">
+        Показати всі
+      </button>
+    </div>
+
+  </main>
+
+  <!-- Блок лабораторії -->
+  <section id="about-lab" class="bg-white border-y border-slate-200 py-8 sm:py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-xl mx-auto mb-6 sm:mb-8">
+        <span class="text-[10px] sm:text-xs font-extrabold uppercase tracking-wider text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+          STEM-майстерня
+        </span>
+        <h2 class="text-xl sm:text-2xl font-heading font-black text-slate-900 mt-2">
+          3D-друк у Степанському ліцеї
+        </h2>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200">
+          <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center mb-3">
+            <i data-lucide="layers" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-bold text-slate-900 text-sm mb-1">1. 3D-моделювання</h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Учні проєктують об'єкти в Tinkercad, Blender та FreeCAD на уроках інформатики та робототехніки.
+          </p>
+        </div>
+
+        <div class="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200">
+          <div class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center mb-3">
+            <i data-lucide="sprout" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-bold text-slate-900 text-sm mb-1">2. Екологічний PLA</h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Використовуємо органічний PLA-пластик із кукурудзяного крохмалю, повністю безпечний для дітей.
+          </p>
+        </div>
+
+        <div class="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200">
+          <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center mb-3">
+            <i data-lucide="heart-handshake" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-bold text-slate-900 text-sm mb-1">3. Користь громаді</h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Виручені кошти покривають закупівлю філаменту для учнів та спрямовуються на допомогу ЗСУ.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Модалка Швидкого перегляду + Three.js 3D Canvas (Оптимізована під мобільні) -->
+  <div id="quickview-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+    <div class="relative bg-white rounded-t-3xl sm:rounded-3xl max-w-2xl w-full p-4 sm:p-6 shadow-2xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto no-scrollbar">
+      <button onclick="closeQuickView()" aria-label="Закрити" class="sticky top-2 float-right -mt-1 -mr-1 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition z-30">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start clear-both" id="quickview-content"></div>
+    </div>
+  </div>
+
+  <!-- Модалка кастомного замовлення -->
+  <div id="custom-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+    <div class="relative bg-white rounded-t-3xl sm:rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl max-h-[92vh] overflow-y-auto">
+      <button onclick="closeCustomOrderModal()" aria-label="Закрити" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+
+      <div class="flex items-center gap-2.5 mb-3">
+        <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
+          <i data-lucide="sparkles" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Індивідуальний 3D-друк</h3>
+          <p class="text-[11px] text-slate-500">Іменні брелоки, таблички або власні .STL файли</p>
+        </div>
+      </div>
+
+      <form onsubmit="handleCustomSubmit(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Тип виробу</label>
+          <select id="custom-type" onchange="handleCustomTypeChange(this.value)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-blue-500">
+            <option value="Власний STL файл для друку">Друк за власним .STL файлом — Договірна</option>
+            <option value="Іменний брелок ліцеїста">Іменний брелок (з гербом/текстом) — 70 ₴</option>
+            <option value="Кріплення або захист FPV дронів">Кріплення / захист FPV дронів — 95 ₴</option>
+            <option value="Підставка під телефон з власним лого">Підставка під гаджети з іменем — 160 ₴</option>
+            <option value="Табличка на двері кабінету/класу">Табличка / вивіска класу — 220 ₴</option>
+          </select>
+        </div>
+
+        <!-- Блок додавання власного файлу клієнтом (активний за замовчуванням) -->
+        <div id="custom-stl-upload-block" class="p-3 bg-amber-50/90 border border-amber-200 rounded-2xl space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-bold text-slate-800">
+              📎 Додати ваш 3D-файл (.stl, .obj, .3mf, .step):
+            </label>
+            <span class="text-[10px] font-black uppercase bg-amber-200 text-amber-900 px-2 py-0.5 rounded-md">Ціна: Договірна</span>
+          </div>
+          <input 
+            type="file" 
+            id="customer-stl-file" 
+            accept=".stl,.obj,.3mf,.step,.stp"
+            class="w-full text-xs text-slate-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
+          >
+          <p class="text-[10px] text-slate-500 leading-tight">
+            Завантажте модель зі свого комп'ютера чи телефона. Вартість друку є <strong class="text-amber-800">договірною</strong> і буде розрахована майстрами ліцею після оцінки ваги філаменту та часу друку.
+          </p>
+        </div>
+
+        <div>
+          <label id="custom-text-label" class="block text-xs font-bold text-slate-700 mb-1">Побажання, розміри або коментар до моделі</label>
+          <input 
+            type="text" 
+            id="custom-text" 
+            placeholder="Наприклад: висота 10 см, заповнення 30%, міцний пластик" 
+            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500"
+          >
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Колір пластику PLA</label>
+          <div class="grid grid-cols-4 gap-1.5 text-[11px]" id="custom-color-picker">
+            <button type="button" onclick="selectCustomColor('Синій (Ліцей)')" class="custom-c-btn p-1.5 rounded-lg border border-blue-600 bg-blue-50 font-semibold text-blue-700 text-center">Синій</button>
+            <button type="button" onclick="selectCustomColor('Жовтий (Патріот)')" class="custom-c-btn p-1.5 rounded-lg border border-slate-200 bg-white font-medium text-slate-700 text-center">Жовтий</button>
+            <button type="button" onclick="selectCustomColor('Чорний матовий')" class="custom-c-btn p-1.5 rounded-lg border border-slate-200 bg-white font-medium text-slate-700 text-center">Чорний</button>
+            <button type="button" onclick="selectCustomColor('Білий мармур')" class="custom-c-btn p-1.5 rounded-lg border border-slate-200 bg-white font-medium text-slate-700 text-center">Білий</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Побажання</label>
+          <textarea 
+            id="custom-notes" 
+            rows="2" 
+            placeholder="Розміри, посилання на модель чи деталі..." 
+            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500"
+          ></textarea>
+        </div>
+
+        <button 
+          type="submit" 
+          class="w-full py-2.5 bg-blue-600 text-white font-bold text-xs rounded-xl shadow-md transition active:scale-95 flex items-center justify-center gap-1.5"
+        >
+          <i data-lucide="plus-circle" class="w-4 h-4"></i>
+          Додати в кошик
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Висувний кошик (Drawer) -->
+  <div id="cart-drawer" class="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-sm hidden transition-opacity duration-300">
+    <div class="absolute right-0 top-0 bottom-0 w-full max-w-sm sm:max-w-md bg-white shadow-2xl flex flex-col transition-transform transform translate-x-full duration-300" id="cart-container">
+      
+      <div class="p-4 border-b border-slate-200 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="shopping-bag" class="w-5 h-5 text-blue-600"></i>
+          <h2 class="text-base font-bold text-slate-900">Кошик 3D-виробів</h2>
+          <span id="cart-drawer-count" class="text-xs bg-blue-100 text-blue-800 px-2 py-0.2 rounded-full font-bold">0</span>
+        </div>
+        <button onclick="closeCartDrawer()" aria-label="Закрити кошик" class="p-2 text-slate-400 hover:text-slate-600 rounded-xl">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-4 space-y-2.5" id="cart-items-list"></div>
+
+      <div id="cart-empty" class="hidden flex-1 flex flex-col items-center justify-center p-6 text-center">
+        <div class="w-12 h-12 bg-blue-50 text-blue-400 rounded-xl flex items-center justify-center mb-2">
+          <i data-lucide="box" class="w-6 h-6"></i>
+        </div>
+        <h4 class="text-xs sm:text-sm font-bold text-slate-800">Кошик порожній</h4>
+        <p class="text-[11px] text-slate-500 mt-0.5">Оберіть сувенір чи брелок для 3D-друку.</p>
+      </div>
+
+      <div id="cart-footer" class="p-4 border-t border-slate-200 bg-slate-50 space-y-2.5">
+        <div class="flex items-center justify-between text-xs text-slate-600">
+          <span>Спільна сума:</span>
+          <span id="cart-subtotal" class="font-bold text-slate-900">0 ₴</span>
+        </div>
+
+        <div class="flex items-center justify-between text-sm font-black text-slate-900 pt-1.5 border-t border-slate-200">
+          <span>Разом:</span>
+          <span id="cart-total" class="text-blue-600 text-base">0 ₴</span>
+        </div>
+
+        <button 
+          onclick="openCheckoutModal()" 
+          class="w-full py-3 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md flex items-center justify-center gap-1.5 transition"
+        >
+          <span>Оформити замовлення</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Модалка оформлення замовлення -->
+  <div id="checkout-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+    <div class="relative bg-white rounded-t-3xl sm:rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl max-h-[92vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
+            <i data-lucide="graduation-cap" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-sm sm:text-base font-bold text-slate-900">Оформлення замовлення</h3>
+            <p class="text-[10px] text-slate-500">STEM-лабораторія Степанського ліцею</p>
+          </div>
+        </div>
+        <button onclick="closeCheckoutModal()" aria-label="Закрити" class="p-1.5 text-slate-400">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form id="checkout-form" onsubmit="handleOrderSubmission(event)" class="mt-3 space-y-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Прізвище та Ім'я *</label>
+            <input 
+              type="text" 
+              required 
+              id="order-fullname"
+              placeholder="Олена Мельник" 
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500"
+            >
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Статус у ліцеї *</label>
+            <select id="order-role" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-blue-500">
+              <option value="Учень ліцею">Учень / Учениця</option>
+              <option value="Батьки">Батьки ліцеїста</option>
+              <option value="Викладач">Вчитель / Працівник</option>
+              <option value="Випускник">Випускник ліцею</option>
+              <option value="Гість">Друг ліцею</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Клас (для учнів)</label>
+            <input 
+              type="text" 
+              id="order-class"
+              placeholder="Наприклад: 8-Б" 
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500"
+            >
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Телефон / Telegram *</label>
+            <input 
+              type="tel" 
+              required 
+              id="order-phone"
+              placeholder="+380 97 000 00 00" 
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500"
+            >
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Отримання</label>
+          <div class="space-y-1.5 text-xs">
+            <label class="flex items-center gap-2 p-2.5 border border-blue-500 bg-blue-50/50 rounded-xl cursor-pointer">
+              <input type="radio" name="delivery-method" value="pickup" checked class="text-blue-600 focus:ring-blue-500">
+              <div class="flex-1">
+                <span class="font-bold text-slate-800">Самовивіз у ліцеї (Безкоштовно)</span>
+                <span class="block text-[10px] text-slate-500">Кабінет інформатики на перервах</span>
+              </div>
+            </label>
+            <label class="flex items-center gap-2 p-2.5 border border-slate-200 hover:bg-slate-50 rounded-xl cursor-pointer">
+              <input type="radio" name="delivery-method" value="post" class="text-blue-600 focus:ring-blue-500">
+              <div class="flex-1">
+                <span class="font-bold text-slate-800">Нова Пошта / Укрпошта по Україні</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Спосіб оплати</label>
+          <div class="space-y-1.5 text-xs">
+            <label class="flex items-center gap-2.5 p-2.5 border-2 border-slate-900 bg-slate-900 text-white rounded-xl cursor-pointer shadow-sm transition">
+              <input type="radio" name="payment-method" value="monobank" checked class="text-amber-400 focus:ring-amber-400">
+              <div class="flex-1">
+                <div class="flex items-center gap-1.5 font-bold">
+                  <span class="text-amber-300">🐱 Банка Monobank</span>
+                  <span class="text-[9px] bg-amber-400 text-slate-950 font-black px-1.5 py-0.2 rounded uppercase">Apple Pay / G Pay</span>
+                </div>
+                <span class="block text-[10px] text-slate-300">Миттєва онлайн-оплата в 1 клік на банку STEM-хабу</span>
+              </div>
+            </label>
+
+            <label class="flex items-center gap-2.5 p-2.5 border border-slate-200 hover:bg-slate-50 rounded-xl cursor-pointer transition">
+              <input type="radio" name="payment-method" value="cash" class="text-blue-600 focus:ring-blue-500">
+              <div class="flex-1">
+                <span class="font-bold text-slate-800">💵 Оплата готівкою при отриманні</span>
+                <span class="block text-[10px] text-slate-500">У кабінеті інформатики ліцею</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="bg-slate-100 p-2.5 rounded-xl flex items-center justify-between">
+          <span class="text-xs text-slate-600 font-semibold">До сплати:</span>
+          <span id="checkout-total" class="text-base font-black text-blue-600">0 ₴</span>
+        </div>
+
+        <button 
+          type="submit" 
+          class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition active:scale-95 flex items-center justify-center gap-1.5"
+        >
+          <i data-lucide="check-circle" class="w-4 h-4"></i>
+          Підтвердити замовлення
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Модалка успіху -->
+  <div id="success-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl space-y-3">
+      <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto">
+        <i data-lucide="check" class="w-7 h-7 stroke-[3]"></i>
+      </div>
+      <h3 class="text-lg font-heading font-black text-slate-900">Прийнято на 3D-друк!</h3>
+      <p class="text-xs text-slate-600">
+        Дякуємо за підтримку STEM-хабу ліцею! Номер: <strong id="order-number" class="text-blue-600 font-black">#STL-3021</strong>.
+      </p>
+      <div id="success-tg-status" class="mt-2 text-xs"></div>
+      <div class="pt-1 space-y-2">
+        <button 
+          type="button" 
+          onclick="copyLastOrderText()" 
+          class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+        >
+          <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          <span>Скопіювати текст замовлення</span>
+        </button>
+        <button 
+          onclick="closeSuccessModal()" 
+          class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition"
+        >
+          Зрозуміло
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модалка списку обраного -->
+  <div id="wishlist-modal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full p-5 shadow-2xl max-h-[85vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <i data-lucide="heart" class="w-4 h-4 text-rose-500 fill-rose-500"></i>
+          <h3 class="text-sm font-bold text-slate-900">Збережені моделі</h3>
+        </div>
+        <button onclick="toggleWishlistModal()" aria-label="Закрити" class="p-1 text-slate-400">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div id="wishlist-items-container" class="mt-3 space-y-2 max-h-72 overflow-y-auto"></div>
+    </div>
+  </div>
+
+  <!-- Модалка адмін-авторизації -->
+  <div id="admin-auth-modal" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-xs w-full p-5 shadow-2xl relative">
+      <button onclick="closeAdminAuthModal()" aria-label="Закрити" class="absolute top-4 right-4 text-slate-400 p-1">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+
+      <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center mb-3">
+        <i data-lucide="shield-lock" class="w-5 h-5"></i>
+      </div>
+
+      <h3 class="text-base font-heading font-black text-slate-900">Вхід в адмінку</h3>
+      <p class="text-[11px] text-slate-500 mt-0.5 mb-3">Керування товарами ліцею без коду.</p>
+
+      <form onsubmit="handleAdminLogin(event)" class="space-y-2.5">
+        <div>
+          <input 
+            type="password" 
+            id="admin-password-input" 
+            required 
+            placeholder="Введіть пароль" 
+            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500"
+          >
+        </div>
+        <button 
+          type="submit" 
+          class="w-full py-2 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-md flex items-center justify-center gap-1.5"
+        >
+          <i data-lucide="key" class="w-3.5 h-3.5"></i>
+          Увійти
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Модалка панелі керування (Адмінка) -->
+  <div id="admin-panel-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl sm:rounded-3xl max-w-4xl w-full p-4 sm:p-6 shadow-2xl relative max-h-[94vh] flex flex-col">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 shrink-0">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black">
+            <i data-lucide="sliders" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h2 class="text-sm sm:text-base font-heading font-black text-slate-900 leading-tight">Адмін-панель STEM-хабу</h2>
+            <p class="text-[10px] text-slate-500">Керування товарами, 3D-моделями, оплатою та ботом</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <button type="button" onclick="logoutAdmin()" class="px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 text-xs hover:bg-slate-50 transition">
+            Вийти
+          </button>
+          <button type="button" onclick="closeAdminPanel()" class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 transition">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto pt-3 space-y-4 no-scrollbar">
+        <!-- Панель керування базою (експорт/імпорт) -->
+        <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs">
+          <span id="admin-total-badge" class="font-bold text-blue-800">29 товарів у базі</span>
+          <div class="flex gap-1.5">
+            <button type="button" onclick="exportProductsJSON()" class="px-2.5 py-1 rounded-lg bg-slate-200 text-slate-800 font-bold hover:bg-slate-300 transition">
+              Експорт
+            </button>
+            <label class="px-2.5 py-1 rounded-lg bg-slate-200 text-slate-800 font-bold cursor-pointer hover:bg-slate-300 transition">
+              Імпорт
+              <input type="file" id="import-json-input" accept=".json" class="hidden" onchange="importProductsJSON(event)">
+            </label>
+            <button type="button" onclick="resetToDefaultProducts()" class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 font-bold border border-rose-200 hover:bg-rose-100 transition">
+              Скинути до дефолту
+            </button>
+          </div>
+        </div>
+
+        <!-- 1. БЛОК НАЛАШТУВАНЬ MONOBANK БАНКИ -->
+        <div class="bg-amber-50/90 p-3 sm:p-4 rounded-2xl border border-amber-200 space-y-3">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-xl bg-slate-950 text-amber-400 flex items-center justify-center font-bold text-sm shadow">
+                🐱
+              </div>
+              <div>
+                <h4 class="text-xs font-black uppercase text-slate-800">Банка Monobank (Онлайн-оплата)</h4>
+                <p class="text-[10px] text-slate-500">Кошти від замовників надходитимуть безпосередньо у вашу банку ліцею</p>
+              </div>
+            </div>
+            <span id="mono-status-pill" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-300">Банку підключено</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Посилання на Банку Monobank:</label>
+              <input type="text" id="mono-jar-link" value="https://send.monobank.ua/jar/89mXHukogN" placeholder="https://send.monobank.ua/jar/89mXHukogN" class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono">
+              <span class="text-[9px] text-slate-500">Посилання з додатку Monobank (Накопичення -> Банка -> Поділитися)</span>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Назва / Призначення банки:</label>
+              <input type="text" id="mono-jar-title" value="Банка STEM-хабу на пластик та ЗСУ 🇺🇦" placeholder="Банка STEM-хабу на пластик та ЗСУ 🇺🇦" class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs">
+              <span class="text-[9px] text-slate-500">Підпис призначення платежу у вікні оплати</span>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between gap-2 pt-1 flex-wrap">
+            <button type="button" onclick="testOpenMonobankJar()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-amber-300 font-bold rounded-xl text-xs shadow-sm transition flex items-center gap-1.5">
+              <span>Відкрити банку для перевірки</span>
+              <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+            </button>
+            <button type="button" onclick="saveMonobankSettings()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-sm transition">
+              Зберегти банку Monobank
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. БЛОК НАЛАШТУВАНЬ TELEGRAM-БОТА -->
+        <div class="bg-blue-50/90 p-3 sm:p-4 rounded-2xl border border-blue-200 space-y-3">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold">
+                <i data-lucide="send" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <h4 class="text-xs font-black uppercase text-slate-800">Telegram-бот для замовлень</h4>
+                <p class="text-[10px] text-slate-500">Автоматичні сповіщення в групу/чат ліцею про кожне замовлення</p>
+              </div>
+            </div>
+            <span id="tg-status-pill" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-300">Потрібен токен</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Токен Telegram-бота (Bot Token):</label>
+              <input type="password" id="tg-bot-token" placeholder="Наприклад: 7123456789:AAH..." class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono">
+              <span class="text-[9px] text-slate-500">Отримайте у @BotFather командою /newbot</span>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">ID чату або групи (Chat ID):</label>
+              <input type="text" id="tg-chat-id" placeholder="Наприклад: -100123456789 або 12345678" class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono">
+              <span class="text-[9px] text-slate-500">ID вашої групи або особистого чату для сповіщень</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Юзернейм бота / менеджера:</label>
+              <input type="text" id="tg-bot-username" placeholder="@stepan_lyceum_3d_bot" class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs">
+              <span class="text-[9px] text-slate-500">Для прямого переходу клієнта з сайту в Telegram</span>
+            </div>
+
+            <div class="flex items-end gap-2">
+              <button type="button" onclick="saveTelegramSettings()" class="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-sm transition">
+                Зберегти налаштування
+              </button>
+              <button type="button" onclick="testTelegramConnection()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm transition">
+                Тест бота
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. БЛОК КЕРУВАННЯ КАТЕГОРІЯМИ (ВИДАЛЕННЯ ТА ДОДАВАННЯ) -->
+        <div class="bg-indigo-50/80 p-3 sm:p-4 rounded-2xl border border-indigo-200 space-y-3">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow">
+                <i data-lucide="tag" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <h4 class="text-xs font-black uppercase text-slate-800">Керування категоріями</h4>
+                <p class="text-[10px] text-slate-500">Видалення наявних та додавання нових категорій на вітрину</p>
+              </div>
+            </div>
+            <span id="admin-categories-count" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">6 категорій</span>
+          </div>
+
+          <!-- Список категорій із можливістю видалення кожної -->
+          <div id="admin-categories-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
+            <!-- Генерується динамічно -->
+          </div>
+
+          <!-- Форма додавання нової категорії -->
+          <div class="pt-2 border-t border-indigo-200/80 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <input type="text" id="new-cat-label" placeholder="На кнопці (напр. 🎁 Подарунки)" class="flex-1 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs">
+            <input type="text" id="new-cat-name" placeholder="Повна назва (напр. Подарункові сувеніри)" class="flex-1 px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs">
+            <button type="button" onclick="handleAddNewCategory()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs shadow-sm transition whitespace-nowrap">
+              + Додати категорію
+            </button>
+          </div>
+        </div>
+
+        <!-- 4. ФОРМА ДОДАВАННЯ ТОВАРУ ТА СПИСОК АКТИВНИХ МОДЕЛЕЙ -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Форма -->
+          <form id="add-product-form" onsubmit="handleAddNewProduct(event)" class="space-y-2.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <h4 class="text-xs font-black uppercase text-slate-800">Додати товар до каталогу</h4>
+            <input type="text" id="new-title" required placeholder="Назва моделі" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
+            
+            <div class="grid grid-cols-2 gap-2">
+              <select id="new-category" class="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
+                <option value="Брелоки та аксесуари">🔑 Брелоки та аксесуари</option>
+                <option value="Органайзери та підставки">📱 Органайзери та підставки</option>
+                <option value="Деталі FPV та дронів">🚁 Деталі FPV та дронів</option>
+                <option value="Сувеніри та мініатюри">🏰 Сувеніри та мініатюри</option>
+                <option value="Декор та побут">🏺 Декор та побут</option>
+                <option value="Головоломки та антистрес">🧩 Головоломки та антистрес</option>
+              </select>
+              <input type="number" id="new-price" required min="1" placeholder="Ціна ₴" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <input type="text" id="new-author" placeholder="Автор моделі (напр. Богдан Ч.)" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
+              <input type="text" id="new-badge" placeholder="Бейдж (Хіт, Новинка)" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">3D-модель (.STL файл):</label>
+                <input type="file" id="new-stl-file" accept=".stl" class="w-full text-[10px] text-slate-500 file:mr-1.5 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:font-bold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 cursor-pointer">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Форма 3D-огляду:</label>
+                <select id="new-demo-shape" class="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
+                  <option value="cylinder">Циліндр (брелок, стакан)</option>
+                  <option value="wedge">Підставка під гаджет</option>
+                  <option value="box">Коробка / Кейс</option>
+                  <option value="torus">Кільце / Антистрес</option>
+                  <option value="castle">Замок / Фігурка</option>
+                </select>
+              </div>
+            </div>
+
+            <textarea id="new-desc" rows="2" required placeholder="Короткий опис" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"></textarea>
+            <input type="url" id="new-image" required placeholder="URL фото" value="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-mono">
+
+            <button type="submit" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition">
+              Опублікувати товар
+            </button>
+          </form>
+
+          <!-- Список позицій -->
+          <div class="space-y-2">
+            <h4 class="text-xs font-black uppercase text-slate-800">Активні моделі</h4>
+            <div class="max-h-80 overflow-y-auto divide-y divide-slate-100 pr-1 text-xs" id="admin-products-list"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Плаваюча нижня мобільна панель швидких дій (Mobile Navigation Bar) -->
+  <nav class="md:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-200 z-40 px-4 py-2 flex items-center justify-around shadow-lg">
+    <a href="#catalog" class="flex flex-col items-center gap-0.5 text-slate-600 hover:text-blue-600">
+      <i data-lucide="grid" class="w-5 h-5"></i>
+      <span class="text-[10px] font-medium">Вітрина</span>
+    </a>
+    <button onclick="toggleWishlistModal()" class="relative flex flex-col items-center gap-0.5 text-slate-600 hover:text-rose-500">
+      <i data-lucide="heart" class="w-5 h-5"></i>
+      <span class="text-[10px] font-medium">Обране</span>
+    </button>
+    <button onclick="openCartDrawer()" class="relative flex flex-col items-center gap-0.5 text-blue-600">
+      <div class="relative">
+        <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+        <span id="mobile-bar-cart-count" class="absolute -top-1 -right-2 bg-blue-600 text-white font-bold text-[9px] w-4 h-4 rounded-full flex items-center justify-center">0</span>
+      </div>
+      <span class="text-[10px] font-bold">Кошик</span>
+    </button>
+    <button onclick="openCustomOrderModal()" class="flex flex-col items-center gap-0.5 text-slate-600 hover:text-amber-500">
+      <i data-lucide="sparkles" class="w-5 h-5"></i>
+      <span class="text-[10px] font-medium">Кастом</span>
+    </button>
+  </nav>
+
+  <!-- Спливаюче сповіщення (Toast) -->
+  <div id="toast" class="fixed bottom-16 md:bottom-6 right-4 left-4 sm:left-auto sm:right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 border border-slate-700">
+      <i id="toast-icon" data-lucide="check-circle" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+      <span id="toast-msg">Повідомлення</span>
+    </div>
+  </div>
+
+  <!-- Футер -->
+  <footer class="bg-slate-900 text-slate-400 border-t border-slate-800 text-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="flex flex-col sm:flex-row items-center justify-between text-center sm:text-left gap-4">
+        <div>
+          <span class="text-white font-heading font-black text-sm">Степанський ліцей 3D Shop</span>
+          <p class="text-[11px] text-slate-500 mt-0.5">Рівненська обл., Сарненський р-н, смт Степань</p>
+        </div>
+        <div class="text-[11px] text-slate-400 text-center sm:text-right space-y-0.5">
+          <p>© 2026 STEM-лабораторія Степанського ліцею</p>
+          <p class="text-slate-300">Fullstack розробка та UI: <a href="https://t.me/bro9301" target="_blank" rel="noopener noreferrer" class="font-bold text-white hover:text-blue-400 transition inline-flex items-center gap-1">Роман Берник <span class="text-blue-400 font-normal">(@bro9301)</span></a></p>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    /* =========================================================
+       БАЗА ТОВАРІВ СТЕПАНСЬКОГО ЛІЦЕЮ (29 МОДЕЛЕЙ)
+       ========================================================= */
+    const DEFAULT_PRODUCTS = [
+      {
+            "id": 1,
+            "title": "Фірмовий брелок «Степанський ліцей»",
+            "category": "Брелоки та аксесуари",
+            "author": "STEM САЛ",
+            "price": 60,
+            "oldPrice": 80,
+            "badge": "Хіт",
+            "badgeColor": "bg-blue-600 text-white",
+            "rating": 5.0,
+            "reviewsCount": 42,
+            "colors": [
+                  "Синій (Ліцей)",
+                  "Жовтий (Патріот)",
+                  "Чорний матовий",
+                  "Білий мармур"
+            ],
+            "image": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=700&q=80",
+            "demoShape": "cylinder",
+            "stlUrl": null,
+            "description": "Двоколірний надійний брелок із тисненням емблеми САЛ. Оснащений кільцем для ключів або кріплення до рюкзака."
+      },
+      {
+            "id": 2,
+            "title": "Іменний брелок «Your Text» із власним написом",
+            "category": "Брелоки та аксесуари",
+            "author": "Дмитро Кривульський",
+            "price": 70,
+            "oldPrice": 90,
+            "badge": "Кастом",
+            "badgeColor": "bg-amber-500 text-white",
+            "rating": 4.9,
+            "reviewsCount": 38,
+            "colors": [
+                  "Бірюзовий",
+                  "Синій (Ліцей)",
+                  "Жовтий (Патріот)",
+                  "Чорний матовий"
+            ],
+            "image": "images/keychain_custom.jpg",
+            "demoShape": "cylinder",
+            "stlUrl": null,
+            "description": "Індивідуальний овальний брелок для ключів або шкільного рюкзака з вашим персональним текстом, ім'ям, класом чи позивним. Спроєктований ліцеїстом Дмитром Кривульським у Tinkercad та виготовлений на 3D-принтері з міцного PLA-пластику."
+      },
+      {
+            "id": 3,
+            "title": "Чохол-кліпса для учнівського квитка САЛ",
+            "category": "Брелоки та аксесуари",
+            "author": "STEM САЛ",
+            "price": 50,
+            "oldPrice": 70,
+            "badge": "Зручно",
+            "badgeColor": "bg-blue-600 text-white",
+            "rating": 4.7,
+            "reviewsCount": 36,
+            "colors": [
+                  "Синій (Ліцей)",
+                  "Жовтий (Патріот)",
+                  "Білий мармур"
+            ],
+            "image": "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=700&q=80",
+            "demoShape": "box",
+            "stlUrl": null,
+            "description": "Захисний футляр із рельєфною монограмою ліцею. Надійно захищає пластиковий квиток чи проїзний від згинання, має отвір для карабіна або шнурка."
+      },
+      {
+            "id": 4,
+            "title": "Органайзер-підставка для ручок «Молот Тора»",
+            "category": "Органайзери та підставки",
+            "author": "STEM САЛ",
+            "price": 190,
+            "oldPrice": 240,
+            "badge": "Топ",
+            "badgeColor": "bg-blue-600 text-white",
+            "rating": 5.0,
+            "reviewsCount": 49,
+            "colors": [
+                  "Синій (Ліцей)",
+                  "Чорний матовий",
+                  "Сріблястий шовк",
+                  "Золотистий шовк"
+            ],
+            "image": "images/thor_hammer.png",
+            "demoShape": "wedge",
+            "stlUrl": null,
+            "description": "Стильний синій органайзер із рельєфними скандинавськими візерунками та фактурною ручкою, натхненний міфологічним молотом Тора (Мйольнір). Має глибокі ергономічні комірки для ручок, маркерів і лінійок. Чудово підійде для організації канцелярії на робочому столі або як оригінальний подарунок для фанатів міфології."
+      },
+      {
+            "id": 5,
+            "title": "Настільний підвіс для навушників зі струбциною",
+            "category": "Органайзери та підставки",
+            "author": "Богдан Чунківський",
+            "price": 160,
+            "oldPrice": 200,
+            "badge": "Інженерія",
+            "badgeColor": "bg-indigo-600 text-white",
+            "rating": 4.9,
+            "reviewsCount": 28,
+            "colors": [
+                  "Чорний матовий",
+                  "Синій (Ліцей)",
+                  "Смарагдовий",
+                  "Білий мармур"
+            ],
+            "image": "images/headphone_stand.webp",
+            "demoShape": "wedge",
+            "stlUrl": "models/headphone_stand.stl",
+            "description": "Надійний гвинтовий підвіс для навушників авторства учня ліцею Богдана Чунківського. Фіксується на край столу чи полиці за допомогою спеціальної 3D-друкованої гайки-струбцини без свердління та клею. Зберігає простір на столі та захищає оголів'я від заломів."
+      },
+      {
+            "id": 6,
+            "title": "Телескопічна розсувна підставка для смартфона та планшета",
+            "category": "Органайзери та підставки",
+            "author": "Богдан Чунківський",
+            "price": 180,
+            "oldPrice": 220,
+            "badge": "Новинка",
+            "badgeColor": "bg-emerald-600 text-white",
+            "rating": 4.9,
+            "reviewsCount": 34,
+            "colors": [
+                  "Фіолетовий",
+                  "Синій (Ліцей)",
+                  "Чорний матовий",
+                  "Білий мармур"
+            ],
+            "image": "images/phone_stand_telescopic.png",
+            "demoShape": "wedge",
+            "stlUrl": null,
+            "description": "Багатофункціональна розсувна підставка з плавним регулюванням висоти (телескопічний механізм) та шарнірним нахилом спинки. Розроблена ліцеїстом Богданом Чунківським. Стійка масивна платформа надійно тримає гаджети під час онлайн-уроків та відеодзвінків."
+      },
+      {
+            "id": 7,
+            "title": "Регульована гребінчаста підставка для телефону",
+            "category": "Органайзери та підставки",
+            "author": "Богдан Чунківський",
+            "price": 130,
+            "oldPrice": 160,
+            "badge": "Хіт",
+            "badgeColor": "bg-blue-600 text-white",
+            "rating": 4.8,
+            "reviewsCount": 29,
+            "colors": [
+                  "Синій (Ліцей)",
+                  "Чорний матовий",
+                  "Жовтий (Патріот)"
+            ],
+            "image": "images/phone_stand_slotted.webp",
+            "demoShape": "wedge",
+            "stlUrl": "models/phone_stand_slotted.stl",
+            "description": "Оригінальна складна підставка з реберною модульною структурою. Забезпечує відмінну природну вентиляцію корпусу смартфона під час зарядки чи ігор, надійну стійкість у вертикальному та горизонтальному положеннях."
+      },
+      {
+            "id": 8,
+            "title": "Компактна підставка для смартфона",
+            "category": "Органайзери та підставки",
+            "author": "Дмитро Кривульський",
+            "price": 90,
+            "oldPrice": 120,
+            "badge": "Зручно",
+            "badgeColor": "bg-amber-500 text-white",
+            "rating": 4.8,
+            "reviewsCount": 22,
+            "colors": [
+                  "Червоний рубін",
+                  "Синій (Ліцей)",
+                  "Чорний матовий"
+            ],
+            "image": "images/phone_stand_krivulsky.jpg",
+            "demoShape": "wedge",
+            "stlUrl": null,
+            "description": "3D-модель ергономічної підставки для телефона від ліцеїста Дмитра Кривульського. Компактна та зручна монолітна конструкція для комфортного перегляду відео, читання та дзвінків. Легко поміщається у кишеню чи пенал."
+      },
+      {
+            "id": 9,
+            "title": "Органайзер канцелярії «Степанська Вежа»",
+            "category": "Органайзери та підставки",
+            "author": "STEM САЛ",
+            "price": 190,
+            "oldPrice": 230,
+            "badge": "Історія",
+            "badgeColor": "bg-emerald-600 text-white",
+            "rating": 4.8,
+            "reviewsCount": 19,
+            "colors": [
+                  "Чорний матовий",
+                  "Синій (Ліцей)",
+                  "Білий мармур"
+            ],
+            "image": "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=700&q=80",
+            "demoShape": "cylinder",
+            "stlUrl": null,
+            "description": "Міцний стакан із зубцями фортечної вежі Степанського замку для ручок, маркерів, лінійок та пензликів. Поєднує гордість за історію селища зі зручністю на столі."
+      },
+      {
+            "id": 10,
+            "title": "Підставка для смартфона «Степань STEM»",
+            "category": "Органайзери та підставки",
+            "author": "STEM САЛ",
+            "price": 140,
+            "oldPrice": 180,
+            "badge": "Топ",
+            "badgeColor": "bg-amber-500 text-white",
+            "rating": 4.9,
+            "reviewsCount": 31,
+            "colors": [
+                  "Синій (Ліцей)",
+                  "Чорний матовий",
+                  "Смарагдовий",
+                  "Білий мармур"
+            ],
+            "image": "https://images.unsplash.com/photo-1586775490184-b79f0621891f?auto=format&fit=crop&w=700&q=80",
+            "demoShape": "wedge",
+            "stlUrl": null,
+            "description": "Зручна настільна підставка з каналом під зарядний кабель та об'ємним тисненням «Степань STEM». Надійна опора для смартфона будь-якої діагоналі."
+      },
+      {
+            "id": 11,
+            "title": "Органайзер для зубних щіток та пасти (Parametric)",
+            "category": "Декор та побут",
+            "author": "STEM САЛ",
+            "price": 120,
+            "oldPrice": 150,
+            "badge": "Дім & Побут",
+            "badgeColor": "bg-teal-600 text-white",
+            "rating": 4.8,
+            "reviewsCount": 25,
+            "colors": [
+                  "Небесно-блакитний",
+                  "Білий мармур",
+                  "Бежевий шовк"
+            ],
+            "image": "images/toothbrush_holder.png",
+            "demoShape": "box",
+            "stlUrl": "models/toothbrush_holder.stl",
+            "description": "Гігієнічний настінний органайзер для ванної кімнати на 4 окремі зубні щітки зі спеціальним напівкруглим тримачем для тюбика зубної пасти. Забезпечує вентиляцію та швидке висихання. Друкується з екологічного вологостійкого матеріалу."
+      },
+      {
+            "id": 12,
+            "title": "Спіральна дизайнерська ваза «Wave Decor»",
+            "category": "Декор та побут",
+            "author": "STEM САЛ",
+            "price": 220,
+            "oldPrice": 270,
+            "badge": "Естетика",
+            "badgeColor": "bg-indigo-600 text-white",
+            "rating": 5.0,
+            "reviewsCount": 41,
+            "colors": [
+                  "Синій (Ліцей)",
+                  "Білий мармур",
+                  "Золотистий шовк",
+                  "Смарагдовий"
+            ],
+            "image": "images/spiral_vase.png",
+            "demoShape": "cylinder",
+            "stlUrl": null,
+            "description": "Витончена інтер'єрна ваза зі складною хвилястою полігональною геометрією, надрукована в безперервному спіральному режимі (Spiral Vase Mode). Світло чарівно переливається на гранях рельєфу. Чудово підійде для сухоцвітів або як самобутній арт-об'єкт."
+      },
+      {
+            "id": 13,
+            "title": "Тарілочка-миска для домашніх тварин",
+            "category": "Декор та побут",
+            "author": "Дмитро Кривульський",
+            "price": 110,
+            "oldPrice": 140,
+            "badge": "Для улюбленців",
+            "badgeColor": "bg-amber-600 text-white",
+            "rating": 4.7,
+            "reviewsCount": 18,
+            "colors": [
+                  "Помаранчевий",
+                  "Синій (Ліцей)",
+                  "Смарагдовий",
+                  "Чорний матовий"
+            ],
+            "image": "images/pet_bowl.jpg",
+            "demoShape": "cylinder",
+            "stlUrl": null,
+            "description": "Кругла ергономічна тарілка із заокругленими гладкими бортиками для котиків або дрібних собак. Спроєктована ліцеїстом Дмитром Кривульським. Стійка на підлозі, легко очищується та виготовлена з безпечного пластику."
+      },
+      {
+            "id": 14,
+            "title": "Золота дизайнерська каблучка «Спіраль»",
+            "category": "Декор та побут",
+            "author": "STEM САЛ",
+            "price": 75,
+            "oldPrice": 95,
+            "badge": "Стиль",
+            "badgeColor": "bg-amber-500 text-white",
+            "rating": 4.9,
+            "reviewsCount": 33,
+            "colors": [
+                  "Золотистий шовк",
+                  "Сріблястий шовк",
+                  "Бронзовий шовк"
+            ],
+            "image": "images/ring.webp",
+            "demoShape": "torus",
+            "stlUrl": null,
+            "description": "Стильна прикраса з об’ємними спіральними елементами та розкішним металевим блиском шовкового філаменту Silk Gold. Незвичайна форма надає каблучці сучасного й елегантного вигляду. Демонстрація ювелірної мікроточності ліцейського 3D-друку."
+      },
+      {
+            "id": 15,
+            "title": "Фігурка кухаря Ремі («Рататуй»)",
+            "category": "Сувеніри та мініатюри",
+            "author": "STEM САЛ",
+            "price": 140,
+            "oldPrice": 170,
+            "badge": "Мультфільм",
+            "badgeColor": "bg-orange-500 text-white",
+            "rating": 5.0,
+            "reviewsCount": 46,
+            "colors": [
+                  "Сірий шовк",
+                  "Білий мармур",
+                  "Синій (Ліцей)"
+            ],
+            "image": "images/ratatouille.jpg",
+            "demoShape": "castle",
+            "stlUrl": null,
+            "description": "Деталізована 3D-модель милого щура Ремі, головного героя популярного мультфільму «Рататуй». Фігурка зображує персонажа в кухарському ковпаку з великою ложкою в лапках, що підкреслює його любов до кулінарії. Модель має виразні риси, великі вушка та цікаву текстуру поверхні. Чудово підійде для декору або колекції фігурок."
+      },
+      {
+            "id": 16,
+            "title": "Декоративна фігурка панди з бамбуком",
+            "category": "Сувеніри та мініатюри",
+            "author": "STEM САЛ",
+            "price": 150,
+            "oldPrice": 190,
+            "badge": "Милота",
+            "badgeColor": "bg-emerald-600 text-white",
+            "rating": 5.0,
+            "reviewsCount": 54,
+            "colors": [
+                  "Чорно-білий комбінований",
+                  "Білий мармур",
+                  "Смарагдовий"
+            ],
+            "image": "images/panda.webp",
+            "demoShape": "box",
+            "stlUrl": null,
+            "description": "Деталізована 3D-модель чарівної панди, яка сидить і тримає в лапках бамбук. Фігурка має реалістичну текстуру шерсті, виразні очі та зворушливий вигляд. Стане чудовою прикрасою інтер’єру, оригінальним подарунком або доповненням до колекції любителів природи."
+      },
+      {
+            "id": 17,
+            "title": "Декоративна пташка з квітковим візерунком",
+            "category": "Сувеніри та мініатюри",
+            "author": "STEM САЛ",
+            "price": 120,
+            "oldPrice": 150,
+            "badge": "Сувенір",
+            "badgeColor": "bg-indigo-600 text-white",
+            "rating": 4.8,
+            "reviewsCount": 21,
+            "colors": [
+                  "Сірий шовк",
+                  "Синій (Ліцей)",
+                  "Жовтий (Патріот)"
+            ],
+            "image": "images/bird.png",
+            "demoShape": "castle",
+            "stlUrl": null,
+            "description": "Оригінальна 3D-модель милої пташки з розправленими крилами, виразними очима та декоративними квітковими елементами на тулубі й крилах. У лапці пташка тримає стебло, що додає моделі казкового колориту. Чудово пасує для декору робочого місця чи дитячої кімнати."
+      },
+      {
+            "id": 18,
+            "title": "Космічний корабель «Зоряні війни» з підставкою",
+            "category": "Сувеніри та мініатюри",
+            "author": "Дмитро Кривульський",
+            "price": 240,
+            "oldPrice": 290,
+            "badge": "Sci-Fi",
+            "badgeColor": "bg-purple-600 text-white",
+            "rating": 5.0,
+            "reviewsCount": 37,
+            "colors": [
+                  "Білий мармур",
+                  "Чорний матовий",
+                  "Сріблястий шовк"
+            ],
+            "image": "images/star_wars_ship.jpg",
+            "demoShape": "wedge",
+            "stlUrl": null,
+            "description": "3D-модель космічного корабля у стилі культової саги «Зоряні війни» від ліцеїста Дмитра Кривульського. Деталізований корпус із крилами та спеціальна демонстраційна підставка в комплекті. Підходить для 3D-друку, колекціонування та стильного декору."
+      },
+      {
+            "id": 19,
+            "title": "Військовий літак-винищувач",
+            "category": "Сувеніри та мініатюри",
+            "author": "Дмитро Кривульський",
+            "price": 210,
+            "oldPrice": 250,
+            "badge": "Авіація",
+            "badgeColor": "bg-sky-600 text-white",
+            "rating": 4.9,
+            "reviewsCount": 26,
+            "colors": [
+                  "Синій (Ліцей)",
+                  "Хакі мілітарі",
+                  "Сріблястий шовк"
+            ],
+            "image": "images/airplane.png",
+            "demoShape": "wedge",
+            "stlUrl": null,
+            "description": "3D-модель військового літака для 3D-друку, створена ліцеїстом Дмитром Кривульським. Деталізований аеродинамічний корпус, крила з рельєфом, шасі та хвостове оперення. Чудово підійде для колекціонування, шкільного стенду авіамоделювання та як подарунок любителям авіації."
+      },
+      {
+            "id": 20,
+            "title": "Лицарський сувенірний меч «Степанська доблесть»",
+            "category": "Сувеніри та мініатюри",
+            "author": "STEM САЛ",
+            "price": 230,
+            "oldPrice": 280,
+            "badge": "Ексклюзив",
+            "badgeColor": "bg-blue-700 text-white",
+            "rating": 4.9,
+            "reviewsCount": 19,
+            "colors": [
+                  "Сріблястий шовк",
+                  "Сталевий матовий",
+                  "Золотистий шовк"
+            ],
+            "image": "images/sword.png",
+            "demoShape": "castle",
+            "stlUrl": null,
+            "description": "Колекційна масштабна 3D-модель лицарського меча з класичною гардою, фактурним руків'ям та геометрією клинка. Присвячена лицарським звитягам Степанського замку князів Острозьких та незламності українських захисників."
+      },
+      {
+            "id": 21,
+            "title": "Макет «Степанський замок Острозьких XVI ст.»",
+            "category": "Сувеніри та мініатюри",
+            "author": "STEM САЛ",
+            "price": 260,
+            "oldPrice": null,
+            "badge": "Історія",
+            "badgeColor": "bg-indigo-700 text-white",
+            "rating": 5.0,
+            "reviewsCount": 23,
+            "colors": [
+                  "Білий мармур",
+                  "Золотистий шовк",
+                  "Чорний матовий"
+            ],
+            "image": "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=700&q=80",
+            "demoShape": "castle",
+            "stlUrl": null,
+            "description": "Деталізована масштабна 3D-реконструкція фортеці князів Острозьких у Степані на березі Горині. Гордість історико-краєзнавчого проєкту ліцею."
+      },
+      {
+            "id": 22,
+            "title": "Сувенірний Тризуб України з основою 3D",
+            "category": "Сувеніри та мініатюри",
+            "author": "STEM САЛ",
+            "price": 120,
+            "oldPrice": null,
+            "badge": "Патріот",
+            "badgeColor": "bg-blue-600 text-white",
+            "rating": 5.0,
+            "reviewsCount": 61,
+            "colors": [
+                  "Золотистий шовк",
+                  "Жовтий (Патріот)",
+                  "Синій (Ліцей)"
+            ],
+            "image": "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=700&q=80",
+            "demoShape": "castle",
+            "stlUrl": null,
+            "description": "Об'ємний Державний Герб України на надійній підставці. 100% прибутку від замовлень спрямовується на закупівлю пластику та допомогу підрозділам ЗСУ."
+      },
+      {
+            "id": 23,
+            "title": "Захист стеку FPV-дрона з Гербом України",
+            "category": "Деталі FPV та дронів",
+            "author": "Богдан Чунківський",
+            "price": 95,
+            "oldPrice": 120,
+            "badge": "Для ЗСУ",
+            "badgeColor": "bg-emerald-600 text-white",
+            "rating": 5.0,
+            "reviewsCount": 67,
+            "colors": [
+                  "Чорний ударостійкий",
+                  "Олива мілітарі",
+                  "Синій (Ліцей)"
+            ],
+            "image": "images/fpv_shield.webp",
+            "demoShape": "box",
+            "stlUrl": "models/fpv_shield.stl",
+            "description": "Спеціалізована бампер-пластина для надійного захисту польотного контролера (стеку) FPV-дрона від бруду, гілок та механічних ушкоджень при ударах. Прикрашена вигравіруваним Гербом України. Розроблено ліцеїстом Богданом Чунківським для захисту польотної електроніки навчальних та волонтерських дронів."
+      },
+      {
+            "id": 24,
+            "title": "Універсальне кріплення камери GoPro для FPV дронів",
+            "category": "Деталі FPV та дронів",
+            "author": "Богдан Чунківський",
+            "price": 110,
+            "oldPrice": 140,
+            "badge": "FPV Топ",
+            "badgeColor": "bg-blue-600 text-white",
+            "rating": 4.9,
+            "reviewsCount": 43,
+            "colors": [
+                  "Синій міцний",
+                  "Чорний матовий",
+                  "Яскраво-жовтий"
+            ],
+            "image": "images/fpv_gopro_mount.webp",
+            "demoShape": "wedge",
+            "stlUrl": "models/gopro_mount.stl",
+            "description": "Міцне жорстке кріплення для встановлення екшн-камер стандарту GoPro на верхню деку FPV квадрокоптера. Оптимальний фіксований кут нахилу, висока стійкість до вібрацій та жорстких посадок."
+      },
+      {
+            "id": 25,
+            "title": "Захист кінців променів рами Geprc Mark4 (комплект 4 шт)",
+            "category": "Деталі FPV та дронів",
+            "author": "Богдан Чунківський",
+            "price": 85,
+            "oldPrice": 110,
+            "badge": "Комплект 4 шт",
+            "badgeColor": "bg-slate-800 text-white",
+            "rating": 5.0,
+            "reviewsCount": 39,
+            "colors": [
+                  "Чорний зносостійкий",
+                  "Синій (Ліцей)",
+                  "Олива мілітарі"
+            ],
+            "image": "images/fpv_arm_protector.webp",
+            "demoShape": "box",
+            "stlUrl": "models/fpv_arm_protector.stl",
+            "description": "Набір із 4 захисних бамперів (arm protectors) на торці карбонових променів FPV рами Geprc Mark 4. Поглинає енергію удару при контакті із землею та захищає основу моторів і карбонові шари від розшарування."
+      },
+      {
+            "id": 26,
+            "title": "Хвостовик-тримач антени 45° для FPV рами Mark4",
+            "category": "Деталі FPV та дронів",
+            "author": "Богдан Чунківський",
+            "price": 75,
+            "oldPrice": 95,
+            "badge": "FPV Soft-Mount",
+            "badgeColor": "bg-blue-600 text-white",
+            "rating": 4.9,
+            "reviewsCount": 31,
+            "colors": [
+                  "Чорний матовий",
+                  "Олива мілітарі",
+                  "Синій (Ліцей)"
+            ],
+            "image": "images/fpv_tail_mount.webp",
+            "demoShape": "wedge",
+            "stlUrl": null,
+            "description": "Заднє кріплення під кутом 45° для виведення антени відеопередавача та приймача керування (Crossfire / ELRS). Забезпечує стабільний радіозв'язок і запобігає пошкодженню антени пропелерами дрона."
+      },
+      {
+            "id": 27,
+            "title": "Комбінований хвостовик FPV з майданчиком GPS та антен",
+            "category": "Деталі FPV та дронів",
+            "author": "Богдан Чунківський",
+            "price": 95,
+            "oldPrice": 125,
+            "badge": "GPS + Антена",
+            "badgeColor": "bg-indigo-600 text-white",
+            "rating": 5.0,
+            "reviewsCount": 48,
+            "colors": [
+                  "Олива мілітарі",
+                  "Чорний матовий",
+                  "Хакі"
+            ],
+            "image": "images/fpv_gps_mount.webp",
+            "demoShape": "wedge",
+            "stlUrl": null,
+            "description": "Подовжений функціональний хвостовик для FPV-дрона рами Mark 4, що поєднує гніздо під модуль GPS-навігації та вивід для антен зв'язку. Забезпечує якісний прийом супутників подалі від електричних наведень батареї."
+      },
+      {
+            "id": 28,
+            "title": "Гнучкий рухливий антистрес «Горинь-Dragon Flexi»",
+            "category": "Головоломки та антистрес",
+            "author": "STEM САЛ",
+            "price": 180,
+            "oldPrice": 220,
+            "badge": "Суперхіт",
+            "badgeColor": "bg-rose-500 text-white",
+            "rating": 4.9,
+            "reviewsCount": 52,
+            "colors": [
+                  "Шовковий Хамелеон",
+                  "Золотистий шовк",
+                  "Смарагдовий",
+                  "Сріблястий шовк",
+                  "Червоно-білий"
+            ],
+            "image": "images/dragon_flexi.jpg",
+            "demoShape": "torus",
+            "stlUrl": null,
+            "description": "Легендарний рухливий шарнірний дракон ліцею з десятками гнучких хребців та лусочок, надрукований єдиною нерозбірною деталлю (print-in-place) без жодного клею. Приємно перекочується у долоні, шелестить лусочками та знімає стрес. Доступний у шовкових хамелеон-кольорах."
+      },
+      {
+            "id": 29,
+            "title": "Головоломка «Кубик-трансформер Infinity»",
+            "category": "Головоломки та антистрес",
+            "author": "STEM САЛ",
+            "price": 150,
+            "oldPrice": 190,
+            "badge": "Логіка",
+            "badgeColor": "bg-purple-600 text-white",
+            "rating": 4.8,
+            "reviewsCount": 27,
+            "colors": [
+                  "Синій (Ліцей)",
+                  "Чорний матовий",
+                  "Жовтий (Патріот)"
+            ],
+            "image": "https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=700&q=80",
+            "demoShape": "box",
+            "stlUrl": null,
+            "description": "Нескінченний шарнірний фліп-кубик для тренування моторики пальців, просторової уяви та заспокоєння під час перерв між уроками."
+      }
+];
+
+    const ADMIN_PASSWORD_HASH = "ccca9eb9b8b0cc8fdbcc18270648ff549adbb7c7305c73861eaec9957190b745";
+    const STORAGE_KEY_PRODUCTS = "sal_products_v9_rel";
+    const STORAGE_KEY_CART = "stepan_lyceum_cart";
+    const STORAGE_KEY_AUTH = "sal_admin_auth_status";
+    const STORAGE_KEY_TG_TOKEN = "sal_tg_bot_token";
+    const STORAGE_KEY_TG_CHAT_ID = "sal_tg_chat_id";
+    const STORAGE_KEY_TG_USERNAME = "sal_tg_username";
+    const STORAGE_KEY_MONO_JAR = "sal_mono_jar_link";
+    const STORAGE_KEY_MONO_TITLE = "sal_mono_jar_title";
+
+    let products = [];
+    let cart = [];
+    let wishlist = [];
+    let activeCategory = 'all';
+    let searchQuery = '';
+    let maxPrice = 600;
+    let sortBy = 'popular';
+    let selectedCustomColor = 'Синій (Ліцей)';
+    let isAdminAuthenticated = false;
+
+    let telegramBotToken = localStorage.getItem(STORAGE_KEY_TG_TOKEN) || "";
+    let telegramChatId = localStorage.getItem(STORAGE_KEY_TG_CHAT_ID) || "";
+    let telegramUsername = localStorage.getItem(STORAGE_KEY_TG_USERNAME) || "stepan_lyceum_3d_bot";
+    let monobankJarLink = localStorage.getItem(STORAGE_KEY_MONO_JAR) || "https://send.monobank.ua/jar/89mXHukogN";
+    let monobankJarTitle = localStorage.getItem(STORAGE_KEY_MONO_TITLE) || "Банка STEM-хабу на пластик та ЗСУ 🇺🇦";
+    let lastOrderDetails = null;
+
+    /* =========================================================
+       THREE.JS 3D ВІДОБРАЖЕННЯ МОДЕЛЕЙ ТА STL
+       ========================================================= */
+    let stlScene, stlCamera, stlRenderer, stlControls, stlAnimId;
+    let currentStlMesh = null;
+    let resizeObserver = null;
+
+    const FILAMENT_HEX = {
+      "Синій (Ліцей)": 0x2563eb,
+      "Жовтий (Патріот)": 0xfacc15,
+      "Чорний матовий": 0x1e293b,
+      "Білий мармур": 0xe2e8f0,
+      "Золотистий шовк": 0xd97706,
+      "Смарагдовий": 0x059669
+    };
+
+    function initStlViewer(containerId, initialColorName, demoShape = 'cylinder', stlUrl = null) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      disposeStlViewer();
+
+      const width = container.clientWidth || 260;
+      const height = container.clientHeight || 260;
+
+      stlScene = new THREE.Scene();
+      stlScene.background = new THREE.Color(0xf1f5f9);
+
+      stlCamera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+      stlCamera.position.set(0, 30, 55);
+
+      stlRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "low-power" });
+      stlRenderer.setSize(width, height);
+      stlRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+      container.innerHTML = "";
+      container.appendChild(stlRenderer.domElement);
+
+      stlControls = new THREE.OrbitControls(stlCamera, stlRenderer.domElement);
+      stlControls.enableDamping = true;
+      stlControls.dampingFactor = 0.08;
+      stlControls.autoRotate = true;
+      stlControls.autoRotateSpeed = 2.0;
+      stlControls.enableZoom = true;
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+      stlScene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+      dirLight.position.set(30, 50, 30);
+      stlScene.add(dirLight);
+
+      const gridHelper = new THREE.GridHelper(45, 10, 0x94a3b8, 0xcbd5e1);
+      gridHelper.position.y = -10;
+      stlScene.add(gridHelper);
+
+      const hex = FILAMENT_HEX[initialColorName] || 0x2563eb;
+      const material = new THREE.MeshStandardMaterial({
+        color: hex,
+        roughness: 0.35,
+        metalness: 0.1
+      });
+
+      function createDefaultShape() {
+        let geo;
+        if (demoShape === 'cylinder') geo = new THREE.CylinderGeometry(9, 9, 3, 32);
+        else if (demoShape === 'wedge') geo = new THREE.BoxGeometry(14, 10, 12);
+        else if (demoShape === 'torus') geo = new THREE.TorusGeometry(9, 3.5, 16, 40);
+        else if (demoShape === 'castle') geo = new THREE.CylinderGeometry(7, 9, 14, 8);
+        else geo = new THREE.BoxGeometry(12, 12, 12);
+
+        if (currentStlMesh) stlScene.remove(currentStlMesh);
+        currentStlMesh = new THREE.Mesh(geo, material);
+        currentStlMesh.position.y = -2;
+        stlScene.add(currentStlMesh);
+      }
+
+      if (stlUrl && typeof THREE.STLLoader !== 'undefined') {
+        const loader = new THREE.STLLoader();
+        loader.load(stlUrl, function (geometry) {
+          geometry.center();
+          geometry.computeVertexNormals();
+          geometry.computeBoundingBox();
+          const box = geometry.boundingBox;
+          const maxDim = Math.max(box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z);
+          const scale = 26 / (maxDim || 1);
+
+          if (currentStlMesh) stlScene.remove(currentStlMesh);
+          currentStlMesh = new THREE.Mesh(geometry, material);
+          currentStlMesh.scale.set(scale, scale, scale);
+          currentStlMesh.position.y = 0;
+          stlScene.add(currentStlMesh);
+        }, undefined, function (err) {
+          console.warn("Помилка STL файлу, показано базову форму:", err);
+          createDefaultShape();
+        });
+      } else {
+        createDefaultShape();
+      }
+
+      resizeObserver = new ResizeObserver(() => {
+        if (!container || !stlRenderer || !stlCamera) return;
+        const newW = container.clientWidth;
+        const newH = container.clientHeight;
+        if (newW > 0 && newH > 0) {
+          stlCamera.aspect = newW / newH;
+          stlCamera.updateProjectionMatrix();
+          stlRenderer.setSize(newW, newH);
+        }
+      });
+      resizeObserver.observe(container);
+
+      function animate() {
+        stlAnimId = requestAnimationFrame(animate);
+        stlControls.update();
+        stlRenderer.render(stlScene, stlCamera);
+      }
+      animate();
+    }
+
+    function updateViewerColor(colorName) {
+      if (!currentStlMesh || !currentStlMesh.material) return;
+      const hex = FILAMENT_HEX[colorName] || 0x2563eb;
+      currentStlMesh.material.color.setHex(hex);
+    }
+
+    function disposeStlViewer() {
+      if (stlAnimId) cancelAnimationFrame(stlAnimId);
+      if (stlControls) stlControls.dispose();
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+        resizeObserver = null;
+      }
+      if (currentStlMesh) {
+        if (currentStlMesh.geometry) currentStlMesh.geometry.dispose();
+        if (currentStlMesh.material) currentStlMesh.material.dispose();
+        currentStlMesh = null;
+      }
+      if (stlRenderer) {
+        stlRenderer.dispose();
+        stlRenderer.forceContextLoss();
+        stlRenderer = null;
+      }
+    }
+
+    /* =========================================================
+       ДИНАМІЧНЕ КЕРУВАННЯ КАТЕГОРІЯМИ (ДОДАВАННЯ ТА ВИДАЛЕННЯ)
+       ========================================================= */
+    const DEFAULT_CATEGORIES = [
+      { id: 'all', name: 'all', label: 'Всі вироби', isAll: true },
+      { id: 'Брелоки та аксесуари', name: 'Брелоки та аксесуари', label: '🔑 Брелоки' },
+      { id: 'Органайзери та підставки', name: 'Органайзери та підставки', label: '📱 Підставки & Органайзери' },
+      { id: 'Деталі FPV та дронів', name: 'Деталі FPV та дронів', label: '🚁 Дрони & FPV' },
+      { id: 'Сувеніри та мініатюри', name: 'Сувеніри та мініатюри', label: '🏰 Фігурки & Моделі' },
+      { id: 'Декор та побут', name: 'Декор та побут', label: '🏺 Декор & Дім' },
+      { id: 'Головоломки та антистрес', name: 'Головоломки та антистрес', label: '🧩 Антистрес' }
+    ];
+
+    const STORAGE_KEY_CATEGORIES = "sal_categories_v2";
+    let categories = [];
+
+    function loadCategoriesFromStorage() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY_CATEGORIES);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            categories = parsed;
+            return;
+          }
+        }
+        categories = [...DEFAULT_CATEGORIES];
+      } catch (e) {
+        categories = [...DEFAULT_CATEGORIES];
+      }
+    }
+
+    function saveCategoriesToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY_CATEGORIES, JSON.stringify(categories));
+      } catch (e) {}
+    }
+
+    function renderCategoryPills() {
+      const container = document.getElementById("category-pills");
+      if (!container) return;
+
+      container.innerHTML = categories.map(cat => {
+        const isActive = activeCategory === cat.name || (cat.isAll && activeCategory === 'all');
+        const activeClass = isActive 
+          ? "active bg-blue-600 text-white shadow-sm" 
+          : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200";
+        
+        const count = cat.isAll 
+          ? products.length 
+          : products.filter(p => p.category === cat.name).length;
+        const countText = `(${count})`;
+
+        return `
+          <button 
+            type="button"
+            data-cat="${cat.name}" 
+            onclick="selectCategory('${cat.name}')" 
+            class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition ${activeClass}"
+          >
+            ${cat.label} ${countText}
+          </button>
+        `;
+      }).join('');
+    }
+
+    function selectCategory(catName) {
+      activeCategory = catName;
+      renderCategoryPills();
+      renderProducts();
+    }
+
+    function renderAdminCategories() {
+      const countEl = document.getElementById("admin-categories-count");
+      const listEl = document.getElementById("admin-categories-list");
+      if (!listEl) return;
+
+      const nonAll = categories.filter(c => !c.isAll);
+      if (countEl) countEl.innerText = `${nonAll.length} категорій`;
+
+      listEl.innerHTML = nonAll.map(cat => {
+        const productCount = products.filter(p => p.category === cat.name).length;
+        return `
+          <div class="p-2 bg-white rounded-xl border border-slate-200 flex items-center justify-between gap-1.5 shadow-xs">
+            <div class="truncate">
+              <span class="font-bold text-slate-800">${cat.label}</span>
+              <span class="text-[10px] text-slate-400 block truncate">${cat.name} (${productCount} шт.)</span>
+            </div>
+            <button 
+              type="button" 
+              onclick="deleteCategory('${cat.name}')" 
+              class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition shrink-0"
+              title="Видалити категорію"
+            >
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      updateCategorySelects();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function updateCategorySelects() {
+      const select = document.getElementById("new-category");
+      if (!select) return;
+      const nonAll = categories.filter(c => !c.isAll);
+      select.innerHTML = nonAll.map(c => `
+        <option value="${c.name}">${c.label}</option>
+      `).join('');
+    }
+
+    function handleAddNewCategory() {
+      const labelInput = document.getElementById("new-cat-label");
+      const nameInput = document.getElementById("new-cat-name");
+      if (!labelInput || !nameInput) return;
+
+      const label = labelInput.value.trim();
+      const name = nameInput.value.trim() || label;
+
+      if (!label) {
+        showToast("Вкажіть назву категорії!");
+        return;
+      }
+
+      if (categories.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+        showToast("Така категорія вже існує!");
+        return;
+      }
+
+      categories.push({ id: name, name: name, label: label, isAll: false });
+      saveCategoriesToStorage();
+      renderCategoryPills();
+      renderAdminCategories();
+      labelInput.value = "";
+      nameInput.value = "";
+      showToast(`Категорію «${label}» додано!`);
+    }
+
+    function deleteCategory(catName) {
+      if (!confirm(`Ви дійсно бажаєте видалити категорію «${catName}»?`)) return;
+
+      const itemsInCat = products.filter(p => p.category === catName);
+      if (itemsInCat.length > 0) {
+        itemsInCat.forEach(p => { p.category = "Інше"; });
+        if (!categories.some(c => c.name === "Інше")) {
+          categories.push({ id: "Інше", name: "Інше", label: "📦 Інше", isAll: false });
+        }
+        saveProductsToStorage();
+      }
+
+      categories = categories.filter(c => c.name !== catName);
+      if (activeCategory === catName) activeCategory = 'all';
+
+      saveCategoriesToStorage();
+      renderCategoryPills();
+      renderAdminCategories();
+      renderProducts();
+      renderAdminProductsTable();
+      showToast(`Категорію «${catName}» видалено!`);
+    }
+
+    /* =========================================================
+       ІНІЦІАЛІЗАЦІЯ СТОРІНКИ
+       ========================================================= */
+    document.addEventListener("DOMContentLoaded", () => {
+      loadProductsFromStorage();
+      loadCategoriesFromStorage();
+      renderCategoryPills();
+      loadCartFromStorage();
+      checkSavedAdminSession();
+      updateTelegramUIStatus();
+      updateMonobankUIStatus();
+      setupEventListeners();
+      renderProducts();
+      if (window.lucide) lucide.createIcons();
+    });
+
+    function loadProductsFromStorage() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY_PRODUCTS);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            products = parsed;
+            return;
+          }
+        }
+        products = [...DEFAULT_PRODUCTS];
+      } catch (e) {
+        products = [...DEFAULT_PRODUCTS];
+      }
+    }
+
+    function saveProductsToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY_PRODUCTS, JSON.stringify(products));
+      } catch (e) {}
+    }
+
+    function setupEventListeners() {
+      const searchInput = document.getElementById("search-input");
+      const mobileSearchInput = document.getElementById("mobile-search-input");
+      const clearSearchBtn = document.getElementById("clear-search-btn");
+
+      const handleSearch = (val) => {
+        searchQuery = val.toLowerCase().trim();
+        if (searchInput && searchInput.value !== val) searchInput.value = val;
+        if (mobileSearchInput && mobileSearchInput.value !== val) mobileSearchInput.value = val;
+        if (clearSearchBtn) clearSearchBtn.classList.toggle("hidden", searchQuery.length === 0);
+        renderProducts();
+      };
+
+      if (searchInput) searchInput.addEventListener("input", (e) => handleSearch(e.target.value));
+      if (mobileSearchInput) mobileSearchInput.addEventListener("input", (e) => handleSearch(e.target.value));
+      if (clearSearchBtn) clearSearchBtn.addEventListener("click", () => handleSearch(''));
+
+      document.querySelectorAll(".cat-pill").forEach(button => {
+        button.addEventListener("click", () => {
+          document.querySelectorAll(".cat-pill").forEach(btn => {
+            btn.classList.remove("active", "bg-blue-600", "text-white");
+            btn.classList.add("bg-white", "text-slate-700");
+          });
+          button.classList.add("active", "bg-blue-600", "text-white");
+          button.classList.remove("bg-white", "text-slate-700");
+
+          activeCategory = button.getAttribute("data-cat");
+          renderProducts();
+        });
+      });
+
+      const priceSlider = document.getElementById("price-range");
+      const priceLabel = document.getElementById("price-range-label");
+      if (priceSlider && priceLabel) {
+        priceSlider.addEventListener("input", (e) => {
+          maxPrice = Number(e.target.value);
+          priceLabel.innerText = `${maxPrice} ₴`;
+          renderProducts();
+        });
+      }
+
+      const sortSelect = document.getElementById("sort-select");
+      if (sortSelect) {
+        sortSelect.addEventListener("change", (e) => {
+          sortBy = e.target.value;
+          renderProducts();
+        });
+      }
+
+      const resetBtn = document.getElementById("reset-filters-btn");
+      if (resetBtn) resetBtn.addEventListener("click", resetAllFilters);
+
+      const cartBtn = document.getElementById("open-cart-btn");
+      if (cartBtn) cartBtn.addEventListener("click", openCartDrawer);
+
+      const backdrops = [
+        { id: "cart-drawer", fn: closeCartDrawer },
+        { id: "quickview-modal", fn: closeQuickView },
+        { id: "custom-modal", fn: closeCustomOrderModal },
+        { id: "checkout-modal", fn: closeCheckoutModal },
+        { id: "wishlist-modal", fn: () => toggleWishlistModal(true) },
+        { id: "admin-auth-modal", fn: closeAdminAuthModal },
+        { id: "admin-panel-modal", fn: closeAdminPanel }
+      ];
+
+      backdrops.forEach(item => {
+        const el = document.getElementById(item.id);
+        if (el) {
+          el.addEventListener("click", (e) => {
+            if (e.target.id === item.id) item.fn();
+          });
+        }
+      });
+    }
+
+    /* =========================================================
+       РЕНДЕРИНГ ВІТРИНИ
+       ========================================================= */
+    function renderProducts() {
+      const grid = document.getElementById("products-grid");
+      const emptyState = document.getElementById("empty-state");
+      const resultsCount = document.getElementById("results-count");
+      const resetBtn = document.getElementById("reset-filters-btn");
+
+      if (!grid) return;
+
+      let filtered = products.filter(p => {
+        const matchesCategory = activeCategory === 'all' || p.category === activeCategory;
+        const matchesSearch = p.title.toLowerCase().includes(searchQuery) || 
+                              p.description.toLowerCase().includes(searchQuery) || 
+                              (p.author && p.author.toLowerCase().includes(searchQuery));
+        const matchesPrice = p.price <= maxPrice;
+        return matchesCategory && matchesSearch && matchesPrice;
+      });
+
+      if (sortBy === 'price-asc') filtered.sort((a, b) => a.price - b.price);
+      else if (sortBy === 'price-desc') filtered.sort((a, b) => b.price - a.price);
+      else if (sortBy === 'rating') filtered.sort((a, b) => b.rating - a.rating);
+      else filtered.sort((a, b) => (b.reviewsCount || 0) - (a.reviewsCount || 0));
+
+      if (resultsCount) {
+        if (activeCategory === 'all' && searchQuery === '' && maxPrice >= 600) {
+          resultsCount.innerHTML = `<span class="font-bold text-slate-700">Всі вироби:</span> <strong class="text-blue-600 font-black text-sm">${products.length} шт.</strong>`;
+        } else if (searchQuery !== '' || maxPrice < 600) {
+          resultsCount.innerHTML = `<span class="font-bold text-slate-700">Знайдено:</span> <strong class="text-blue-600 font-black text-sm">${filtered.length}</strong> <span class="text-slate-400">з ${products.length} шт.</span>`;
+        } else {
+          resultsCount.innerHTML = `<span class="font-bold text-slate-700">Категорія «${activeCategory}»:</span> <strong class="text-blue-600 font-black text-sm">${filtered.length} шт.</strong> <span class="text-slate-400">(всього: ${products.length})</span>`;
+        }
+      }
+      const isFiltered = activeCategory !== 'all' || searchQuery !== '' || maxPrice < 600;
+      if (resetBtn) resetBtn.classList.toggle("hidden", !isFiltered);
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        if (emptyState) emptyState.classList.remove("hidden");
+        return;
+      }
+
+      if (emptyState) emptyState.classList.add("hidden");
+      grid.innerHTML = filtered.map(product => {
+        const isFav = wishlist.includes(product.id);
+        const badgeColor = product.badgeColor || "bg-blue-600 text-white";
+
+        return `
+          <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all duration-200 flex flex-col justify-between">
+            <div>
+              <div class="relative bg-slate-100 aspect-square overflow-hidden cursor-pointer" onclick="openQuickView(${product.id})">
+                <img 
+                  src="${product.image}" 
+                  alt="${product.title}" 
+                  class="w-full h-full object-cover"
+                  loading="lazy"
+                  onerror="this.src='https://placehold.co/400x400/1e293b/ffffff?text=3D+SAL'"
+                >
+                <span class="absolute top-2.5 left-2.5 text-[9px] font-black px-2 py-0.5 rounded-md ${badgeColor} shadow-sm uppercase tracking-wider">
+                  ${product.badge || '3D САЛ'}
+                </span>
+
+                <button 
+                  onclick="event.stopPropagation(); toggleWishlist(${product.id})" 
+                  aria-label="В обране"
+                  class="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-white/90 text-slate-600 flex items-center justify-center shadow" 
+                >
+                  <i data-lucide="heart" class="w-3.5 h-3.5 ${isFav ? 'text-rose-500 fill-rose-500' : ''}"></i>
+                </button>
+              </div>
+
+              <div class="p-3 sm:p-4">
+                <div class="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+                  <span class="font-medium text-blue-600 truncate">${product.category}</span>
+                  <span class="text-amber-500 font-bold shrink-0">★ ${product.rating || '5.0'}</span>
+                </div>
+
+                <h3 onclick="openQuickView(${product.id})" class="font-bold text-slate-900 text-xs sm:text-sm leading-snug line-clamp-2 cursor-pointer">
+                  ${product.title}
+                </h3>
+                ${product.author ? `<div class="text-[10px] text-slate-500 font-medium mt-1"><span class="text-slate-400">Розробка:</span> <strong class="text-slate-700">${product.author}</strong></div>` : ''}
+                
+                <div class="mt-2">
+                  <select id="color-select-${product.id}" class="w-full bg-slate-50 border border-slate-200 rounded-lg py-1 px-2 text-[11px] font-medium text-slate-700">
+                    ${(product.colors || ["Синій (Ліцей)"]).map(col => `<option value="${col}">${col}</option>`).join('')}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-3 sm:p-4 pt-0 flex items-center justify-between border-t border-slate-100 mt-2">
+              <div>
+                <div class="text-sm sm:text-base font-black text-slate-900">${product.price} ₴</div>
+                ${product.oldPrice ? `<div class="text-[10px] text-slate-400 line-through">${product.oldPrice} ₴</div>` : ''}
+              </div>
+
+              <button 
+                onclick="addToCartWithSelectedColor(${product.id})" 
+                class="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-1 active:scale-95 transition"
+              >
+                <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                <span>Друк</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    /* =========================================================
+       МОДАЛКА ТА 3D ШВИДКИЙ ОГЛЯД
+       ========================================================= */
+    function openQuickView(productId) {
+      const product = products.find(p => p.id === productId);
+      if (!product) return;
+
+      document.body.style.overflow = "hidden";
+      const modal = document.getElementById("quickview-modal");
+      const content = document.getElementById("quickview-content");
+
+      content.innerHTML = `
+        <div class="space-y-2">
+          <div class="relative aspect-square bg-slate-100 rounded-2xl overflow-hidden border border-slate-200">
+            <img id="modal-img-view" src="${product.image}" alt="${product.title}" class="w-full h-full object-cover">
+            <div id="stl-canvas-container" class="w-full h-full absolute inset-0 hidden"></div>
+            <div class="absolute bottom-2 left-2 text-[10px] bg-slate-900/80 text-white px-2 py-0.5 rounded pointer-events-none">
+              <span id="view-mode-hint">📷 Фото</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" onclick="switchMediaMode('photo')" id="btn-mode-photo" class="py-1.5 rounded-xl text-xs font-bold bg-blue-600 text-white shadow-sm flex items-center justify-center gap-1">
+              <i data-lucide="image" class="w-3.5 h-3.5"></i> Фото
+            </button>
+            <button type="button" onclick="switchMediaMode('3d', '${product.demoShape || 'cylinder'}', '${product.stlUrl || ''}')" id="btn-mode-3d" class="py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 flex items-center justify-center gap-1">
+              <i data-lucide="box" class="w-3.5 h-3.5 text-blue-600"></i> 3D Модель
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+              <span class="text-[10px] font-bold text-blue-600 uppercase tracking-wide">${product.category}</span>
+              ${product.author ? `<span class="text-[10px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">Автор: ${product.author}</span>` : ''}
+            </div>
+            <h2 class="text-base sm:text-lg font-heading font-black text-slate-900 mt-0.5">${product.title}</h2>
+            <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">${product.description}</p>
+            ${product.stlUrl ? `
+              <div class="mt-2">
+                <a href="${product.stlUrl}" download class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] font-bold border border-blue-200 transition">
+                  <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                  <span>Завантажити .STL файл</span>
+                </a>
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 space-y-2">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Колір пластику PLA:</label>
+              <select id="modal-color-select" onchange="updateViewerColor(this.value)" class="w-full bg-white border border-slate-200 rounded-lg p-1.5 text-xs font-semibold">
+                ${(product.colors || ["Синій (Ліцей)"]).map(c => `<option value="${c}">${c}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Ім'я / клас для тиснення:</label>
+              <input type="text" id="modal-custom-name" placeholder="Наприклад: 9-А клас" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs">
+            </div>
+          </div>
+
+          <div class="pt-1">
+            <div class="text-xl font-black text-slate-900 mb-2">${product.price} ₴</div>
+            <button onclick="addFromModal(${product.id})" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5 transition active:scale-95">
+              <i data-lucide="printer" class="w-4 h-4"></i>
+              <span>Замовити 3D-друк</span>
+            </button>
+          </div>
+        </div>
+      `;
+
+      modal.classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function switchMediaMode(mode, demoShape = 'cylinder', stlUrl = null) {
+      const imgView = document.getElementById("modal-img-view");
+      const stlContainer = document.getElementById("stl-canvas-container");
+      const btnPhoto = document.getElementById("btn-mode-photo");
+      const btn3D = document.getElementById("btn-mode-3d");
+      const hint = document.getElementById("view-mode-hint");
+      const colorSelect = document.getElementById("modal-color-select");
+      const currentColor = colorSelect ? colorSelect.value : 'Синій (Ліцей)';
+
+      if (mode === '3d') {
+        imgView.classList.add("hidden");
+        stlContainer.classList.remove("hidden");
+        btn3D.className = "py-1.5 rounded-xl text-xs font-bold bg-blue-600 text-white shadow-sm flex items-center justify-center gap-1";
+        btnPhoto.className = "py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 flex items-center justify-center gap-1";
+        hint.innerText = "🔄 Обертайте пальцем";
+        initStlViewer("stl-canvas-container", currentColor, demoShape, stlUrl);
+      } else {
+        stlContainer.classList.add("hidden");
+        imgView.classList.remove("hidden");
+        btnPhoto.className = "py-1.5 rounded-xl text-xs font-bold bg-blue-600 text-white shadow-sm flex items-center justify-center gap-1";
+        btn3D.className = "py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 flex items-center justify-center gap-1";
+        hint.innerText = "📷 Фото";
+        disposeStlViewer();
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeQuickView() {
+      disposeStlViewer();
+      document.body.style.overflow = "";
+      const modal = document.getElementById("quickview-modal");
+      if (modal) modal.classList.add("hidden");
+    }
+
+    function addFromModal(productId) {
+      const product = products.find(p => p.id === productId);
+      if (!product) return;
+      const color = document.getElementById("modal-color-select").value;
+      const customNote = document.getElementById("modal-custom-name").value.trim();
+      addItemToCart(product.id, product.title, product.price, color, product.image, customNote);
+      closeQuickView();
+    }
+
+    function addToCartWithSelectedColor(productId) {
+      const product = products.find(p => p.id === productId);
+      if (!product) return;
+      const select = document.getElementById(`color-select-${productId}`);
+      const chosenColor = select ? select.value : 'Синій (Ліцей)';
+      addItemToCart(product.id, product.title, product.price, chosenColor, product.image, "");
+    }
+
+    /* =========================================================
+       КОШИК ТА ОБРОБКА ТОВАРІВ
+       ========================================================= */
+    function addItemToCart(id, title, price, color, image, customNote = "", isNegotiable = false, attachedFileName = "", fileObj = null) {
+      const cartItemId = `${id}-${color}-${customNote.trim()}`;
+      const existing = cart.find(i => i.cartItemId === cartItemId);
+
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        cart.push({ 
+          cartItemId, 
+          id, 
+          title, 
+          price, 
+          color, 
+          image, 
+          customNote, 
+          quantity: 1, 
+          isNegotiable: !!isNegotiable,
+          attachedFileName: attachedFileName || "",
+          fileObj: fileObj || null
+        });
+      }
+
+      saveCartToStorage();
+      updateCartUI();
+      showToast(`«${title}» у кошику!`);
+    }
+
+    function changeQuantity(cartItemId, delta) {
+      const item = cart.find(i => i.cartItemId === cartItemId);
+      if (!item) return;
+      item.quantity += delta;
+      if (item.quantity <= 0) cart = cart.filter(i => i.cartItemId !== cartItemId);
+      saveCartToStorage();
+      updateCartUI();
+    }
+
+    function removeFromCart(cartItemId) {
+      cart = cart.filter(i => i.cartItemId !== cartItemId);
+      saveCartToStorage();
+      updateCartUI();
+    }
+
+    function updateCartUI() {
+      const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+      const b1 = document.getElementById("cart-count-badge");
+      const b2 = document.getElementById("cart-drawer-count");
+      const b3 = document.getElementById("mobile-bar-cart-count");
+      if (b1) b1.innerText = totalCount;
+      if (b2) b2.innerText = totalCount;
+      if (b3) b3.innerText = totalCount;
+
+      const listContainer = document.getElementById("cart-items-list");
+      const cartEmpty = document.getElementById("cart-empty");
+      const cartFooter = document.getElementById("cart-footer");
+
+      if (!listContainer) return;
+
+      if (cart.length === 0) {
+        listContainer.innerHTML = '';
+        if (cartEmpty) cartEmpty.classList.remove("hidden");
+        if (cartFooter) cartFooter.classList.add("hidden");
+        return;
+      }
+
+      if (cartEmpty) cartEmpty.classList.add("hidden");
+      if (cartFooter) cartFooter.classList.remove("hidden");
+
+      listContainer.innerHTML = cart.map(item => {
+        const itemPriceDisplay = item.isNegotiable 
+          ? '<span class="text-xs font-black text-amber-600">Договірна</span>' 
+          : `<span class="text-xs font-black">${item.price * item.quantity} ₴</span>`;
+
+        return `
+          <div class="flex items-start gap-2.5 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+            <img src="${item.image}" alt="${item.title}" class="w-12 h-12 object-cover rounded-lg bg-white shrink-0">
+            <div class="flex-1 min-w-0">
+              <h4 class="text-xs font-bold text-slate-800 truncate">${item.title}</h4>
+              <div class="text-[10px] text-blue-600 font-semibold">${item.color}</div>
+              ${item.customNote ? `<div class="text-[9px] text-amber-700 truncate">${item.customNote}</div>` : ''}
+              ${item.attachedFileName ? `<div class="text-[9px] text-blue-700 font-bold truncate">📎 ${item.attachedFileName}</div>` : ''}
+              
+              <div class="flex items-center justify-between mt-1.5">
+                ${itemPriceDisplay}
+                <div class="flex items-center gap-1.5">
+                  <div class="flex items-center border border-slate-300 rounded-md bg-white text-xs">
+                    <button onclick="changeQuantity('${item.cartItemId}', -1)" class="w-5 h-5 font-bold">-</button>
+                    <span class="w-4 text-center font-bold text-[11px]">${item.quantity}</span>
+                    <button onclick="changeQuantity('${item.cartItemId}', 1)" class="w-5 h-5 font-bold">+</button>
+                  </div>
+                  <button onclick="removeFromCart('${item.cartItemId}')" class="text-slate-400 hover:text-rose-500">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const hasNegotiable = cart.some(i => i.isNegotiable);
+      const fixedTotal = cart.filter(i => !i.isNegotiable).reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      
+      let totalText = "";
+      if (fixedTotal > 0 && hasNegotiable) {
+        totalText = `${fixedTotal} ₴ (+ Договірна)`;
+      } else if (hasNegotiable) {
+        totalText = "Договірна";
+      } else {
+        totalText = `${fixedTotal} ₴`;
+      }
+
+      const subEl = document.getElementById("cart-subtotal");
+      const totEl = document.getElementById("cart-total");
+      const chkEl = document.getElementById("checkout-total");
+      if (subEl) subEl.innerText = totalText;
+      if (totEl) totEl.innerText = totalText;
+      if (chkEl) chkEl.innerText = totalText;
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function saveCartToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY_CART, JSON.stringify(cart));
+      } catch (e) {}
+    }
+
+    function loadCartFromStorage() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY_CART);
+        if (saved) cart = JSON.parse(saved);
+        updateCartUI();
+      } catch (e) {}
+    }
+
+    function openCartDrawer() {
+      document.body.style.overflow = "hidden";
+      const drawer = document.getElementById("cart-drawer");
+      const container = document.getElementById("cart-container");
+      if (drawer && container) {
+        drawer.classList.remove("hidden");
+        setTimeout(() => container.classList.remove("translate-x-full"), 10);
+      }
+    }
+
+    function closeCartDrawer() {
+      document.body.style.overflow = "";
+      const drawer = document.getElementById("cart-drawer");
+      const container = document.getElementById("cart-container");
+      if (drawer && container) {
+        container.classList.add("translate-x-full");
+        setTimeout(() => drawer.classList.add("hidden"), 300);
+      }
+    }
+
+    /* =========================================================
+       ОБРАНЕ (WISHLIST)
+       ========================================================= */
+    function toggleWishlist(productId) {
+      const idx = wishlist.indexOf(productId);
+      if (idx > -1) wishlist.splice(idx, 1);
+      else wishlist.push(productId);
+
+      const badge = document.getElementById("wishlist-count-badge");
+      if (badge) {
+        badge.innerText = wishlist.length;
+        badge.classList.toggle("hidden", wishlist.length === 0);
+      }
+      renderProducts();
+    }
+
+    function toggleWishlistModal(forceClose = false) {
+      const modal = document.getElementById("wishlist-modal");
+      if (!modal) return;
+      if (forceClose || !modal.classList.contains("hidden")) {
+        modal.classList.add("hidden");
+        document.body.style.overflow = "";
+        return;
+      }
+
+      document.body.style.overflow = "hidden";
+      const container = document.getElementById("wishlist-items-container");
+      const savedItems = products.filter(p => wishlist.includes(p.id));
+
+      if (savedItems.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-500 py-4 text-center">Список порожній.</p>';
+      } else {
+        container.innerHTML = savedItems.map(item => `
+          <div class="flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded-xl">
+            <div class="flex items-center gap-2">
+              <img src="${item.image}" alt="${item.title}" class="w-8 h-8 object-cover rounded-lg">
+              <span class="text-xs font-bold text-slate-900 truncate max-w-[150px]">${item.title}</span>
+            </div>
+            <button onclick="openQuickView(${item.id}); toggleWishlistModal(true);" class="text-xs font-bold text-blue-600">
+              Замовити
+            </button>
+          </div>
+        `).join('');
+      }
+      modal.classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    }
+
+    /* =========================================================
+       КАСТОМНІ ЗАМОВЛЕННЯ ТА ВЛАСНИЙ STL
+       ========================================================= */
+    function openCustomOrderModal() {
+      document.body.style.overflow = "hidden";
+      const m = document.getElementById("custom-modal");
+      if (m) m.classList.remove("hidden");
+    }
+
+    function closeCustomOrderModal() {
+      document.body.style.overflow = "";
+      const m = document.getElementById("custom-modal");
+      if (m) m.classList.add("hidden");
+    }
+
+    function selectCustomColor(colorName) {
+      selectedCustomColor = colorName;
+      document.querySelectorAll(".custom-c-btn").forEach(btn => {
+        if (btn.innerText.includes(colorName.split(' ')[0])) {
+          btn.classList.add("border-blue-600", "bg-blue-50", "text-blue-700");
+          btn.classList.remove("border-slate-200", "bg-white", "text-slate-700");
+        } else {
+          btn.classList.remove("border-blue-600", "bg-blue-50", "text-blue-700");
+          btn.classList.add("border-slate-200", "bg-white", "text-slate-700");
+        }
+      });
+    }
+
+    function handleCustomTypeChange(val) {
+      const uploadBlock = document.getElementById("custom-stl-upload-block");
+      const textLabel = document.getElementById("custom-text-label");
+      const textInput = document.getElementById("custom-text");
+      
+      const isCustomFile = val.includes("Власний") || val.includes("власним");
+      if (uploadBlock) {
+        uploadBlock.classList.toggle("hidden", !isCustomFile);
+      }
+      if (isCustomFile) {
+        if (textLabel) textLabel.innerText = "Побажання, розміри або коментар до моделі";
+        if (textInput) {
+          textInput.placeholder = "Наприклад: висота 10 см, заповнення 30%, міцний пластик";
+          textInput.required = false;
+        }
+      } else {
+        if (textLabel) textLabel.innerText = "Текст для гравіювання / напису *";
+        if (textInput) {
+          textInput.placeholder = "Наприклад: Дарина Ковальчук, 9-А";
+          textInput.required = true;
+        }
+      }
+    }
+
+    async function handleCustomSubmit(e) {
+      e.preventDefault();
+      const type = document.getElementById("custom-type").value;
+      const text = document.getElementById("custom-text").value.trim();
+      const notes = document.getElementById("custom-notes").value.trim();
+      const fileInput = document.getElementById("customer-stl-file");
+      
+      const isCustomFile = type.includes("Власний") || type.includes("власним");
+      let attachedFileName = "";
+      let attachedFileSize = "";
+      let customerFileObj = null;
+
+      if (isCustomFile && fileInput && fileInput.files && fileInput.files[0]) {
+        customerFileObj = fileInput.files[0];
+        attachedFileName = customerFileObj.name;
+        attachedFileSize = (customerFileObj.size / 1024).toFixed(0) + " KB";
+      }
+
+      let price = 80;
+      let isNegotiable = false;
+
+      if (isCustomFile) {
+        price = 0;
+        isNegotiable = true;
+      } else if (type.includes("220")) price = 220;
+      else if (type.includes("160")) price = 160;
+      else if (type.includes("95")) price = 95;
+      else if (type.includes("70")) price = 70;
+
+      const titleName = isCustomFile ? "Друк за власним .STL файлом" : `Кастом: ${type.split('—')[0].trim()}`;
+      let noteDetails = text || '';
+      if (attachedFileName) {
+        noteDetails = `Файл: ${attachedFileName} (${attachedFileSize}). ${noteDetails}`;
+      }
+      if (notes) {
+        noteDetails += ` (Деталі: ${notes})`;
+      }
+
+      addItemToCart(
+        999, 
+        titleName, 
+        price, 
+        selectedCustomColor, 
+        "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80", 
+        noteDetails, 
+        isNegotiable, 
+        attachedFileName,
+        customerFileObj
+      );
+      closeCustomOrderModal();
+      openCartDrawer();
+    }
+
+    /* =========================================================
+       ОФОРМЛЕННЯ ЗАМОВЛЕННЯ, TELEGRAM ТА MONOBANK
+       ========================================================= */
+    function openCheckoutModal() {
+      if (cart.length === 0) return;
+      closeCartDrawer();
+      document.body.style.overflow = "hidden";
+      const m = document.getElementById("checkout-modal");
+      if (m) m.classList.remove("hidden");
+    }
+
+    function closeCheckoutModal() {
+      document.body.style.overflow = "";
+      const m = document.getElementById("checkout-modal");
+      if (m) m.classList.add("hidden");
+    }
+
+    function closeSuccessModal() {
+      const m = document.getElementById("success-modal");
+      if (m) m.classList.add("hidden");
+    }
+
+    function copyLastOrderText() {
+      if (!lastOrderDetails || !lastOrderDetails.plain) return;
+      navigator.clipboard.writeText(lastOrderDetails.plain).then(() => {
+        showToast("📋 Текст замовлення скопійовано!");
+      }).catch(() => {
+        showToast("Не вдалося скопіювати");
+      });
+    }
+
+    function saveTelegramSettings() {
+      const token = document.getElementById("tg-bot-token").value.trim();
+      const chatId = document.getElementById("tg-chat-id").value.trim();
+      const username = document.getElementById("tg-bot-username").value.trim().replace('@', '');
+
+      telegramBotToken = token;
+      telegramChatId = chatId;
+      telegramUsername = username || "stepan_lyceum_3d_bot";
+
+      localStorage.setItem(STORAGE_KEY_TG_TOKEN, token);
+      localStorage.setItem(STORAGE_KEY_TG_CHAT_ID, chatId);
+      localStorage.setItem(STORAGE_KEY_TG_USERNAME, telegramUsername);
+
+      updateTelegramUIStatus();
+      showToast("Налаштування Telegram збережено!");
+    }
+
+    function updateTelegramUIStatus() {
+      const pill = document.getElementById("tg-status-pill");
+      if (pill) {
+        if (telegramBotToken && telegramChatId) {
+          pill.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-300";
+          pill.innerText = "Підключено";
+        } else {
+          pill.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-300";
+          pill.innerText = "Потрібен токен";
+        }
+      }
+      const tokenInput = document.getElementById("tg-bot-token");
+      const chatInput = document.getElementById("tg-chat-id");
+      const userInput = document.getElementById("tg-bot-username");
+      if (tokenInput && !tokenInput.value) tokenInput.value = telegramBotToken;
+      if (chatInput && !chatInput.value) chatInput.value = telegramChatId;
+      if (userInput && !userInput.value) userInput.value = telegramUsername;
+
+      const headerTgLink = document.getElementById("header-tg-link");
+      if (headerTgLink) {
+        headerTgLink.href = `https://t.me/${telegramUsername}`;
+      }
+    }
+
+    async function testTelegramConnection() {
+      const token = document.getElementById("tg-bot-token").value.trim() || telegramBotToken;
+      const chatId = document.getElementById("tg-chat-id").value.trim() || telegramChatId;
+
+      if (!token || !chatId) {
+        showToast("Вкажіть токен та Chat ID!");
+        return;
+      }
+
+      showToast("Відправка тестового сповіщення...");
+      try {
+        const text = `🔔 <b>Тестове сповіщення:</b>\nTelegram-бот STEM-майстерні Степанського ліцею налаштовано успішно!\nБанка Monobank: ${monobankJarLink}\n🕒 Час: ${new Date().toLocaleString('uk-UA')}`;
+        const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: text,
+            parse_mode: 'HTML'
+          })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showToast("✅ Тест успішний! Сповіщення надіслано.");
+        } else {
+          showToast(`❌ Помилка: ${data.description || 'Не вдалося надіслати'}`);
+        }
+      } catch (err) {
+        showToast("Помилка зв'язку з Telegram API");
+      }
+    }
+
+    function saveMonobankSettings() {
+      let link = document.getElementById("mono-jar-link").value.trim();
+      const title = document.getElementById("mono-jar-title").value.trim();
+      if (link && !link.startsWith("http")) {
+        if (link.startsWith("send.monobank.ua")) link = "https://" + link;
+        else link = "https://send.monobank.ua/jar/" + link;
+      }
+      monobankJarLink = link || "https://send.monobank.ua/jar/89mXHukogN";
+      monobankJarTitle = title || "Банка STEM-хабу на пластик та ЗСУ 🇺🇦";
+      localStorage.setItem(STORAGE_KEY_MONO_JAR, monobankJarLink);
+      localStorage.setItem(STORAGE_KEY_MONO_TITLE, monobankJarTitle);
+      updateMonobankUIStatus();
+      showToast("Банку Monobank збережено!");
+    }
+
+    function updateMonobankUIStatus() {
+      const pill = document.getElementById("mono-status-pill");
+      if (pill) {
+        if (monobankJarLink) {
+          pill.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-300";
+          pill.innerText = "Банку підключено";
+        } else {
+          pill.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-300";
+          pill.innerText = "Вкажіть вашу банку";
+        }
+      }
+      const linkInput = document.getElementById("mono-jar-link");
+      const titleInput = document.getElementById("mono-jar-title");
+      if (linkInput && !linkInput.value) linkInput.value = monobankJarLink;
+      if (titleInput && !titleInput.value) titleInput.value = monobankJarTitle;
+    }
+
+    function testOpenMonobankJar() {
+      const link = (document.getElementById("mono-jar-link") && document.getElementById("mono-jar-link").value.trim()) || monobankJarLink;
+      window.open(link, "_blank");
+    }
+
+    async function handleOrderSubmission(e) {
+      e.preventDefault();
+      if (cart.length === 0) return;
+
+      const submitBtn = document.getElementById("checkout-submit-btn");
+      const origBtnHtml = submitBtn ? submitBtn.innerHTML : 'Підтвердити';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Оформлення замовлення...</span>';
+        if (window.lucide) lucide.createIcons();
+      }
+
+      const fullname = document.getElementById("order-fullname").value.trim();
+      const role = document.getElementById("order-role").value;
+      const userClass = document.getElementById("order-class").value.trim();
+      const phone = document.getElementById("order-phone").value.trim();
+      
+      const deliveryRadio = document.querySelector('input[name="delivery-method"]:checked');
+      const deliveryMethod = deliveryRadio ? deliveryRadio.value : 'pickup';
+      const deliveryLabel = deliveryMethod === 'pickup' 
+        ? "Самовивіз у ліцеї (каб. інформатики на перервах)" 
+        : "Нова Пошта / Укрпошта по Україні";
+
+      const payRadio = document.querySelector('input[name="payment-method"]:checked');
+      const paymentMethod = payRadio ? payRadio.value : 'monobank';
+      const isMonobank = paymentMethod === 'monobank';
+
+      const totalText = document.getElementById("checkout-total").innerText;
+      const hasNegotiable = cart.some(i => i.isNegotiable);
+      const fixedTotal = cart.filter(i => !i.isNegotiable).reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const orderNumber = `#STL-${Math.floor(1000 + Math.random() * 9000)}`;
+
+      // Генерація посилання на Банку Monobank
+      const cleanJarBase = monobankJarLink.split('?')[0];
+      const monoComment = `${orderNumber} ${fullname}`.trim();
+      const monoPaymentUrl = fixedTotal > 0 
+        ? `${cleanJarBase}?a=${fixedTotal}&text=${encodeURIComponent(monoComment)}`
+        : `${cleanJarBase}?text=${encodeURIComponent(monoComment + ' (договірна)')}`;
+      const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(monoPaymentUrl)}`;
+
+      const itemsListHtml = cart.map((item, idx) => {
+        let str = `<b>${idx + 1}. ${item.title}</b>\n`;
+        str += `   • Колір: ${item.color}\n`;
+        if (item.attachedFileName) str += `   • 📎 Прикріплений 3D-файл: <b>${item.attachedFileName}</b>\n`;
+        if (item.customNote) str += `   • Коментар/тиснення: <i>${item.customNote}</i>\n`;
+        const pDisplay = item.isNegotiable ? '<b>Договірна (розраховується)</b>' : `<b>${item.price * item.quantity} ₴</b>`;
+        str += `   • Кількість: ${item.quantity} шт. | Ціна: ${pDisplay}`;
+        return str;
+      }).join('\n\n');
+
+      const itemsListPlain = cart.map((item, idx) => {
+        let str = `${idx + 1}. ${item.title}\n`;
+        str += `   - Колір: ${item.color}\n`;
+        if (item.attachedFileName) str += `   - Файл: ${item.attachedFileName}\n`;
+        if (item.customNote) str += `   - Коментар: ${item.customNote}\n`;
+        const pDisplay = item.isNegotiable ? 'Договірна' : `${item.price * item.quantity} ₴`;
+        str += `   - Кількість: ${item.quantity} шт. | Ціна: ${pDisplay}`;
+        return str;
+      }).join('\n');
+
+      const paymentLineHtml = isMonobank
+        ? `💳 <b>Оплата:</b> 🐱 <b>Онлайн на Банку Monobank (${totalText})</b>\n🔗 <b>Посилання на банку:</b> ${monoPaymentUrl}`
+        : `💳 <b>Оплата:</b> 💵 <b>Готівкою при отриманні (${totalText})</b>`;
+
+      const paymentLinePlain = isMonobank
+        ? `Оплата: Онлайн на Банку Monobank (${totalText})\nПосилання: ${monoPaymentUrl}`
+        : `Оплата: Готівкою при отриманні (${totalText})`;
+
+      const tgMessageHtml = `📦 <b>НОВЕ ЗАМОВЛЕННЯ 3D-ДРУКУ ${orderNumber}</b>\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `👤 <b>Замовник:</b> ${fullname}\n` +
+        `🎓 <b>Статус:</b> ${role} ${userClass ? `(${userClass})` : ''}\n` +
+        `📞 <b>Контакт:</b> <code>${phone}</code>\n` +
+        `🚚 <b>Отримання:</b> ${deliveryLabel}\n` +
+        `${paymentLineHtml}\n\n` +
+        `🛒 <b>Замовлені вироби:</b>\n${itemsListHtml}\n\n` +
+        `💰 <b>РАЗОМ ДО СПЛАТИ:</b> <b>${totalText}</b>\n` +
+        `🕒 <b>Час:</b> ${new Date().toLocaleString('uk-UA')}\n` +
+        `━━━━━━━━━━━━━━━━━━━━\n` +
+        `🏫 <i>Степанський ліцей • STEM-лабораторія 3D</i>`;
+
+      const tgMessagePlain = `Нове замовлення ${orderNumber}\n` +
+        `Замовник: ${fullname} (${role} ${userClass})\n` +
+        `Контакт: ${phone}\n` +
+        `Отримання: ${deliveryLabel}\n` +
+        `${paymentLinePlain}\n\n` +
+        `Товари:\n${itemsListPlain}\n\n` +
+        `Разом до сплати: ${totalText}`;
+
+      lastOrderDetails = {
+        number: orderNumber,
+        html: tgMessageHtml,
+        plain: tgMessagePlain,
+        phone: phone,
+        fullname: fullname,
+        totalText: totalText,
+        monoUrl: monoPaymentUrl
+      };
+
+      let sentViaBot = false;
+      const filesToSend = cart.filter(i => i.fileObj).map(i => i.fileObj);
+
+      if (telegramBotToken && telegramChatId) {
+        try {
+          const res = await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: telegramChatId,
+              text: tgMessageHtml,
+              parse_mode: 'HTML'
+            })
+          });
+          const data = await res.json();
+          if (data && data.ok) {
+            sentViaBot = true;
+          }
+
+          for (const f of filesToSend) {
+            try {
+              const fd = new FormData();
+              fd.append("chat_id", telegramChatId);
+              fd.append("document", f);
+              fd.append("caption", `📎 3D-файл до замовлення ${orderNumber} (${fullname})`);
+              await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendDocument`, {
+                method: "POST",
+                body: fd
+              });
+            } catch (errDoc) {
+              console.warn("Помилка відправки документа в Telegram:", errDoc);
+            }
+          }
+        } catch (err) {
+          console.warn("Помилка відправлення через Bot API:", err);
+        }
+      }
+
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = origBtnHtml;
+      }
+      closeCheckoutModal();
+
+      const numEl = document.getElementById("order-number");
+      if (numEl) numEl.innerText = orderNumber;
+      const statusBox = document.getElementById("success-tg-status");
+      if (statusBox) {
+        let contentHtml = '';
+
+        if (isMonobank) {
+          contentHtml += `
+            <div class="p-3.5 rounded-2xl bg-gradient-to-br from-slate-950 to-slate-900 text-white text-left space-y-2.5 shadow-xl border border-slate-800">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <div class="w-8 h-8 rounded-xl bg-amber-400 text-slate-950 font-black flex items-center justify-center text-sm shadow">
+                    🐱
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-black text-white">Оплата на Банку Monobank</h4>
+                    <p class="text-[10px] text-slate-400">Apple Pay, Google Pay або картка</p>
+                  </div>
+                </div>
+                <span class="text-sm font-black text-amber-400">${totalText}</span>
+              </div>
+
+              ${hasNegotiable && fixedTotal === 0 ? `
+                <div class="p-2 rounded-xl bg-slate-800 text-[11px] text-amber-300 border border-amber-400/30">
+                  ℹ️ Для замовлення з власним файлом сума <strong>договірна</strong>. Майстри ліцею оцінять модель і зв'яжуться з вами для остаточного розрахунку.
+                </div>
+              ` : `
+                <a 
+                  href="${monoPaymentUrl}" 
+                  target="_blank" 
+                  class="w-full py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg transition active:scale-95 text-center"
+                >
+                  <span>🐱 Оплатити ${totalText} у Monobank</span>
+                  <i data-lucide="external-link" class="w-4 h-4"></i>
+                </a>
+              `}
+
+              ${fixedTotal > 0 ? `
+                <div class="pt-2 flex items-center gap-3 border-t border-slate-800">
+                  <img src="${qrCodeUrl}" alt="QR Monobank" class="w-16 h-16 rounded-xl bg-white p-1 shrink-0 shadow">
+                  <div class="text-[10px] text-slate-300 leading-relaxed">
+                    <span class="font-bold text-white block mb-0.5">Оплата з комп'ютера:</span>
+                    Наведіть камеру телефона на QR-код для відкриття банки у додатку Monobank.
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        } else {
+          contentHtml += `
+            <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-[11px] text-slate-700 flex items-center gap-2 text-left">
+              <i data-lucide="banknote" class="w-5 h-5 text-emerald-600 shrink-0"></i>
+              <div>
+                <span class="font-bold text-slate-900 block">Оплата готівкою при отриманні:</span>
+                <span>Сума: <b>${totalText}</b> у кабінеті інформатики ліцею.</span>
+              </div>
+            </div>
+          `;
+        }
+
+        // Блок Telegram
+        if (sentViaBot) {
+          contentHtml += `
+            <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-800 flex items-center gap-2 text-left mt-2">
+              <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600 shrink-0"></i>
+              <span>Замовлення ${filesToSend && filesToSend.length ? 'разом із вашим 3D-файлом ' : ''}успішно передано у Telegram-бот майстерні!</span>
+            </div>
+          `;
+        } else {
+          contentHtml += `
+            <div class="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-left space-y-1.5 mt-2">
+              <div class="flex items-center gap-1.5 font-bold text-blue-900 text-xs">
+                <i data-lucide="send" class="w-3.5 h-3.5 text-blue-600 shrink-0"></i>
+                <span>Підтвердження в Telegram:</span>
+              </div>
+              <a 
+                href="https://t.me/${telegramUsername}?text=${encodeURIComponent(tgMessagePlain)}" 
+                target="_blank" 
+                class="w-full py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs flex items-center justify-center gap-1.5 transition text-center"
+              >
+                <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                <span>Надіслати замовлення боту (@${telegramUsername})</span>
+              </a>
+            </div>
+          `;
+        }
+
+        statusBox.innerHTML = contentHtml;
+      }
+
+      const succModal = document.getElementById("success-modal");
+      if (succModal) succModal.classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+
+      cart = [];
+      saveCartToStorage();
+      updateCartUI();
+    }
+
+    /* =========================================================
+       АДМІН-ПАНЕЛЬ (УПРАВЛІННЯ ТОВАРАМИ ТА STL)
+       ========================================================= */
+    async function hashPassword(str) {
+      const buf = new TextEncoder().encode(str);
+      const hash = await crypto.subtle.digest("SHA-256", buf);
+      return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    function checkSavedAdminSession() {
+      if (sessionStorage.getItem(STORAGE_KEY_AUTH) === "true") isAdminAuthenticated = true;
+    }
+
+    function openAdminAccessModal() {
+      if (isAdminAuthenticated) {
+        renderAdminProductsTable();
+        updateTelegramUIStatus();
+        updateMonobankUIStatus();
+        const m = document.getElementById("admin-panel-modal");
+        if (m) m.classList.remove("hidden");
+      } else {
+        const m = document.getElementById("admin-auth-modal");
+        if (m) m.classList.remove("hidden");
+      }
+    }
+
+    function closeAdminAuthModal() {
+      const m = document.getElementById("admin-auth-modal");
+      if (m) m.classList.add("hidden");
+    }
+
+    async function handleAdminLogin(e) {
+      e.preventDefault();
+      const pass = document.getElementById("admin-password-input").value.trim();
+      const hashed = await hashPassword(pass);
+      if (hashed === ADMIN_PASSWORD_HASH) {
+        isAdminAuthenticated = true;
+        sessionStorage.setItem(STORAGE_KEY_AUTH, "true");
+        document.getElementById("admin-password-input").value = "";
+        closeAdminAuthModal();
+        openAdminAccessModal();
+        showToast("Авторизовано!");
+      } else {
+        showToast("Невірний пароль");
+      }
+    }
+
+    function logoutAdmin() {
+      isAdminAuthenticated = false;
+      sessionStorage.removeItem(STORAGE_KEY_AUTH);
+      closeAdminPanel();
+      showToast("Ви вийшли з адмінки");
+    }
+
+    function closeAdminPanel() {
+      const m = document.getElementById("admin-panel-modal");
+      if (m) m.classList.add("hidden");
+    }
+
+    function renderAdminProductsTable() {
+      const totalBadge = document.getElementById("admin-total-badge");
+      if (totalBadge) totalBadge.innerText = `${products.length} товарів`;
+      
+      const listEl = document.getElementById("admin-products-list");
+      if (listEl) {
+        listEl.innerHTML = products.map((prod) => `
+          <div class="py-2 flex items-center justify-between gap-2">
+            <div class="truncate flex items-center gap-1.5">
+              <span class="font-medium">${prod.title} (${prod.price} ₴)</span>
+              ${prod.author ? `<span class="text-[9px] bg-slate-100 text-slate-600 px-1 py-0.2 rounded font-medium">👤 ${prod.author}</span>` : ''}
+              ${prod.stlUrl ? '<span class="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded font-black">3D STL</span>' : '<span class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.2 rounded">Фото</span>'}
+            </div>
+            <button onclick="deleteProduct(${prod.id})" class="text-rose-500 hover:text-rose-700 font-bold p-1">✕</button>
+          </div>
+        `).join('');
+      }
+    }
+
+    async function handleAddNewProduct(e) {
+      e.preventDefault();
+      const stlFileInput = document.getElementById("new-stl-file");
+      let stlDataUrl = null;
+
+      if (stlFileInput && stlFileInput.files && stlFileInput.files[0]) {
+        stlDataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (evt) => resolve(evt.target.result);
+          reader.onerror = () => resolve(null);
+          reader.readAsDataURL(stlFileInput.files[0]);
+        });
+      }
+
+      const author = (document.getElementById("new-author") && document.getElementById("new-author").value.trim()) || "STEM САЛ";
+
+      const newProduct = {
+        id: Date.now(),
+        title: document.getElementById("new-title").value.trim(),
+        category: document.getElementById("new-category").value,
+        author: author,
+        price: Number(document.getElementById("new-price").value),
+        badge: document.getElementById("new-badge").value.trim() || "САЛ",
+        badgeColor: "bg-blue-600 text-white",
+        rating: 5.0,
+        reviewsCount: 1,
+        colors: ["Синій (Ліцей)", "Чорний матовий", "Жовтий (Патріот)"],
+        image: document.getElementById("new-image").value.trim(),
+        demoShape: (document.getElementById("new-demo-shape") && document.getElementById("new-demo-shape").value) || "box",
+        stlUrl: stlDataUrl || null,
+        description: document.getElementById("new-desc").value.trim()
+      };
+
+      products.unshift(newProduct);
+      saveProductsToStorage();
+      renderProducts();
+      renderCategoryPills();
+      renderAdminProductsTable();
+      showToast("Товар і 3D-модель успішно додано!");
+      document.getElementById("add-product-form").reset();
+    }
+
+    function deleteProduct(id) {
+      products = products.filter(p => p.id !== id);
+      saveProductsToStorage();
+      renderProducts();
+      renderCategoryPills();
+      renderAdminProductsTable();
+      showToast("Товар видалено");
+    }
+
+    function exportProductsJSON() {
+      const a = document.createElement('a');
+      a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(products, null, 2));
+      a.download = `sal_catalog_${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+    }
+
+    function importProductsJSON(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          products = JSON.parse(evt.target.result);
+          saveProductsToStorage();
+          renderProducts();
+          renderCategoryPills();
+          renderAdminProductsTable();
+          showToast("Імпортовано успішно!");
+        } catch (err) {
+          showToast("Помилка файлу JSON");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function resetToDefaultProducts() {
+      products = [...DEFAULT_PRODUCTS];
+      saveProductsToStorage();
+      renderProducts();
+      renderCategoryPills();
+      renderAdminProductsTable();
+      showToast("Скинуто до початкового каталогу");
+    }
+
+    function resetAllFilters() {
+      activeCategory = 'all';
+      searchQuery = '';
+      maxPrice = 600;
+      const pSlider = document.getElementById("price-range");
+      const pLabel = document.getElementById("price-range-label");
+      const sInput = document.getElementById("search-input");
+      const mInput = document.getElementById("mobile-search-input");
+      if (pSlider) pSlider.value = 600;
+      if (pLabel) pLabel.innerText = "600 ₴";
+      if (sInput) sInput.value = '';
+      if (mInput) mInput.value = '';
+      document.querySelectorAll(".cat-pill").forEach((btn, idx) => {
+        if (idx === 0) {
+          btn.classList.add("active", "bg-blue-600", "text-white");
+          btn.classList.remove("bg-white", "text-slate-700");
+        } else {
+          btn.classList.remove("active", "bg-blue-600", "text-white");
+          btn.classList.add("bg-white", "text-slate-700");
+        }
+      });
+      renderCategoryPills();
+      renderProducts();
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      const msgEl = document.getElementById("toast-msg");
+      if (!toast || !msgEl) return;
+      msgEl.innerText = message;
+      toast.classList.remove("translate-y-24", "opacity-0");
+      toast.classList.add("translate-y-0", "opacity-100");
+      setTimeout(() => {
+        toast.classList.remove("translate-y-0", "opacity-100");
+        toast.classList.add("translate-y-24", "opacity-0");
+      }, 2500);
+    }
+</script>
+</body>
+</html>
