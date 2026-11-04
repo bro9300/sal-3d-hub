@@ -1025,6 +1025,7 @@
 
             <textarea id="new-desc" rows="2" required placeholder="Короткий опис" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"></textarea>
             <input type="url" id="new-image" required placeholder="URL фото" value="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-mono">
+            <input type="text" id="new-colors" placeholder="Кольори через кому (напр. Синій, Чорний, Жовтий)" value="Синій (Ліцей), Чорний матовий, Жовтий (Патріот)" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
 
             <button type="submit" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition">
               Опублікувати товар
@@ -3647,7 +3648,7 @@
         badgeColor: "bg-blue-600 text-white",
         rating: 5.0,
         reviewsCount: 1,
-        colors: ["Синій (Ліцей)", "Чорний матовий", "Жовтий (Патріот)"],
+        colors: (document.getElementById("new-colors") && document.getElementById("new-colors").value.trim()) ? document.getElementById("new-colors").value.split(',').map(c => c.trim()).filter(Boolean) : ["Синій (Ліцей)", "Чорний матовий", "Жовтий (Патріот)"],
         image: document.getElementById("new-image").value.trim(),
         demoShape: (document.getElementById("new-demo-shape") && document.getElementById("new-demo-shape").value) || "box",
         stlUrl: stlDataUrl || null,
