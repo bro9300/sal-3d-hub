@@ -29,6 +29,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
   <meta name="author" content="Роман Берник (@bro9301)">
   <title>Степанський академічний ліцей 3D Shop — Офіційний мерч STEM-хабу</title>
+  <meta name="description" content="Офіційний 3D-мерч STEM-хабу Степанського академічного ліцею (смт Степань, Сарненський р-н, Рівненська обл.). 3D-друк брелоків, підставок для гаджетів, деталей для FPV-дронів, сувенірів та індивідуальних замовлень на підтримку ЗСУ.">
+  <meta name="keywords" content="Степанський академічний ліцей, Степань 3D Shop, 3D друк Степань, STEM хаб САЛ, мерч ліцею, деталі FPV, Сарненський район, Роман Берник">
+  <meta property="og:title" content="Степанський академічний ліцей 3D Shop — Офіційний мерч STEM-хабу">
+  <meta property="og:description" content="Інтерактивна 3D-вітрина виробів учнів Степанського ліцею з екологічного PLA-пластику. Кошти йдуть на філамент та підтримку ЗСУ.">
+  <meta property="og:type" content="website">
   <!-- Фавіконка сайту (3D логотип STEM-хабу) -->
   <link rel=icon href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%232563eb'/><path d='M50 20 L78 36 L78 68 L50 84 L22 68 L22 36 Z' fill='%231d4ed8' stroke='white' stroke-width='4.5'/><path d='M50 20 L50 52 L78 68 M50 52 L22 68' stroke='white' stroke-width='4.5'/><text x='50' y='60' font-family='sans-serif' font-weight='900' font-size='20' fill='%23facc15' text-anchor='middle'>3D</text></svg>">
 
@@ -96,8 +101,23 @@
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
-    #stl-canvas-container canvas {
+    #stl-canvas-container canvas,
+    #banner-3d-container canvas {
       touch-action: none; /* Запобігає конфлікту скролу сторінки під час обертання 3D */
+    }
+    @keyframes soft-pulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.45); }
+      50% { transform: scale(1.03); box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
+    }
+    .animate-soft-pulse {
+      animation: soft-pulse 2.5s infinite ease-in-out;
+    }
+    @keyframes amber-glow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.35); }
+      50% { box-shadow: 0 0 14px 4px rgba(251, 191, 36, 0.25); }
+    }
+    .animate-amber-glow {
+      animation: amber-glow 3s infinite ease-in-out;
     }
   </style>
 </head>
@@ -105,8 +125,8 @@
 
   <!-- Оголошення місії -->
   <aside class="bg-slate-950 text-white text-[11px] sm:text-xs py-2 px-3 text-center font-medium shadow-inner flex items-center justify-center gap-2 flex-wrap border-b border-blue-900/40">
-    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-extrabold uppercase tracking-wider border border-amber-400/30">
-      <i data-lucide="printer" class="w-3 h-3"></i> STEM САЛ
+    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-extrabold uppercase tracking-wider border border-amber-400/30 animate-amber-glow">
+      <i data-lucide="printer" class="w-3 h-3 animate-bounce"></i> STEM САЛ
     </span>
     <span class="leading-tight">Кошти йдуть на котушки еко-пластику та підтримку ЗСУ 🇺🇦</span>
     <span class="text-blue-300/80 text-[10px] hidden sm:inline">• смт Степань</span>
@@ -206,12 +226,15 @@
     </div>
   </header>
 
-  <!-- Банер -->
+  <!-- Банер із інтерактивною 3D-сценою (Three.js) -->
   <section class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-2 w-full">
-    <div class="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-slate-900 text-white p-5 sm:p-10 shadow-xl border border-slate-800 grid-pattern">
-      <div class="relative z-10 max-w-3xl flex flex-col items-start gap-3 sm:gap-4">
+    <div class="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-slate-900 text-white p-5 sm:p-8 lg:p-10 shadow-xl border border-slate-800 grid-pattern grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+      
+      <!-- Ліва колонка: текст та кнопки дій -->
+      <div class="relative z-10 lg:col-span-7 flex flex-col items-start gap-3 sm:gap-4">
         <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span class="w-2 h-2 rounded-full bg-emerald-400 -ml-3.5"></span>
           Степанський ліцей • Сарненщина
         </div>
         
@@ -219,21 +242,67 @@
           3D-мерч, створений ліцеїстами.
         </h1>
         
-        <p class="text-slate-300 text-xs sm:text-sm sm:leading-relaxed">
-          Кожен виріб розроблено та надруковано на базі STEM-лабораторії ліцею з екологічного PLA-пластику. Оглядайте у 3D прямо в телефоні та замовляйте з власним гравіюванням!
+        <p class="text-slate-300 text-xs sm:text-sm sm:leading-relaxed max-w-2xl">
+          Кожен виріб розроблено та надруковано на базі STEM-лабораторії ліцею з екологічного PLA-пластику. Обертайте 3D-модель просто зараз та замовляйте сувеніри з власним гравіюванням!
         </p>
 
         <div class="flex flex-wrap gap-2.5 pt-2 w-full sm:w-auto">
-          <a href="#catalog" class="flex-1 sm:flex-none justify-center px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm transition shadow-md flex items-center gap-1.5 active:scale-95 text-center">
-            Вітрина
-            <i data-lucide="arrow-down" class="w-3.5 h-3.5"></i>
+          <a href="#catalog" class="flex-1 sm:flex-none justify-center px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm transition shadow-md flex items-center gap-1.5 active:scale-95 text-center animate-soft-pulse">
+            Вітрина (29)
+            <i data-lucide="arrow-down" class="w-3.5 h-3.5 animate-bounce"></i>
           </a>
-          <button onclick="openCustomOrderModal()" class="flex-1 sm:flex-none justify-center px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs sm:text-sm transition flex items-center gap-1.5">
-            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i>
-            Свій напис
+          <button onclick="openCustomOrderModal()" class="flex-1 sm:flex-none justify-center px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs sm:text-sm transition flex items-center gap-1.5 animate-amber-glow">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400 animate-pulse"></i>
+            Свій напис / .STL
+          </button>
+        </div>
+
+        <!-- Швидкі переваги -->
+        <div class="pt-2 flex items-center gap-4 text-[11px] text-slate-400 flex-wrap">
+          <span class="flex items-center gap-1"><i data-lucide="rotate-3d" class="w-3.5 h-3.5 text-blue-400"></i> 360° 3D-огляд</span>
+          <span class="flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i> Еко-пластик PLA</span>
+          <span class="flex items-center gap-1"><i data-lucide="heart" class="w-3.5 h-3.5 text-amber-400"></i> Підтримка ЗСУ 🇺🇦</span>
+        </div>
+      </div>
+
+      <!-- Права колонка: жива інтерактивна 3D-модель (Three.js) -->
+      <div class="lg:col-span-5 relative flex flex-col items-center justify-center">
+        <div class="w-full h-60 sm:h-72 rounded-2xl bg-slate-950/80 border border-slate-800/90 overflow-hidden relative shadow-2xl flex items-center justify-center group">
+          <div id="banner-3d-container" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
+
+          <!-- Бейдж підказки -->
+          <div class="absolute top-3 left-3 text-[10px] bg-slate-900/80 text-blue-300 px-2.5 py-1 rounded-lg backdrop-blur-md border border-slate-700/70 pointer-events-none font-bold flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+            <span id="banner-3d-title">Фортечна вежа САЛ</span>
+          </div>
+
+          <div class="absolute bottom-3 right-3 text-[10px] bg-blue-600/85 text-white px-2.5 py-1 rounded-lg backdrop-blur-sm pointer-events-none font-semibold flex items-center gap-1 shadow">
+            <i data-lucide="hand" class="w-3 h-3"></i> Крутіть мишкою / пальцем
+          </div>
+
+          <!-- Перемикач кольорів пластику прямо на банері -->
+          <div class="absolute bottom-3 left-3 flex items-center gap-1.5 bg-slate-900/85 p-1.5 rounded-xl border border-slate-800 backdrop-blur-md">
+            <button type="button" onclick="setBanner3DColor(0x2563eb)" title="Синій (Ліцей)" class="w-4 h-4 rounded-full bg-blue-600 border border-white/50 hover:scale-125 transition"></button>
+            <button type="button" onclick="setBanner3DColor(0xfacc15)" title="Жовтий (Патріот)" class="w-4 h-4 rounded-full bg-amber-400 border border-white/50 hover:scale-125 transition"></button>
+            <button type="button" onclick="setBanner3DColor(0x059669)" title="Смарагдовий" class="w-4 h-4 rounded-full bg-emerald-600 border border-white/50 hover:scale-125 transition"></button>
+            <button type="button" onclick="setBanner3DColor(0xe2e8f0)" title="Білий мармур" class="w-4 h-4 rounded-full bg-slate-200 border border-white/50 hover:scale-125 transition"></button>
+          </div>
+        </div>
+
+        <!-- Перемикач 3D-фігур під сценою -->
+        <div class="flex items-center justify-center gap-1.5 mt-2.5 flex-wrap">
+          <button type="button" onclick="switchBanner3DShape('castle', 'Фортечна вежа САЛ')" class="banner-shape-btn px-2.5 py-1 rounded-lg text-[10px] font-bold bg-blue-600 text-white border border-blue-500 transition">
+            🏰 Вежа САЛ
+          </button>
+          <button type="button" onclick="switchBanner3DShape('keychain', '3D Брелок ліцею')" class="banner-shape-btn px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 transition">
+            🔑 Брелок
+          </button>
+          <button type="button" onclick="switchBanner3DShape('knot', 'Антистрес вузол')" class="banner-shape-btn px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 transition">
+            🧩 Антистрес
           </button>
         </div>
       </div>
+
     </div>
   </section>
 
@@ -1999,6 +2068,172 @@
        ========================================================= */
     let firebaseOrders = [];
 
+    /* =========================================================
+       ІНТЕРАКТИВНА 3D-МОДЕЛЬ НА ГОЛОВНОМУ БАНЕРІ (THREE.JS)
+       ========================================================= */
+    let bannerScene, bannerCamera, bannerRenderer, bannerControls, bannerMeshGroup, bannerMaterial;
+    let currentBannerColor = 0x2563eb;
+
+    function initBanner3DViewer() {
+      const container = document.getElementById("banner-3d-container");
+      if (!container || typeof THREE === 'undefined') return;
+
+      const width = container.clientWidth || 320;
+      const height = container.clientHeight || 260;
+
+      bannerScene = new THREE.Scene();
+
+      bannerCamera = new THREE.PerspectiveCamera(42, width / height, 0.1, 1000);
+      bannerCamera.position.set(24, 22, 38);
+
+      bannerRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "low-power" });
+      bannerRenderer.setSize(width, height);
+      bannerRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+      container.innerHTML = "";
+      container.appendChild(bannerRenderer.domElement);
+
+      bannerControls = new THREE.OrbitControls(bannerCamera, bannerRenderer.domElement);
+      bannerControls.enableDamping = true;
+      bannerControls.dampingFactor = 0.06;
+      bannerControls.autoRotate = true;
+      bannerControls.autoRotateSpeed = 2.5;
+      bannerControls.enablePan = false;
+      bannerControls.minDistance = 20;
+      bannerControls.maxDistance = 65;
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+      bannerScene.add(ambientLight);
+
+      const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.95);
+      dirLight1.position.set(30, 50, 35);
+      bannerScene.add(dirLight1);
+
+      const dirLight2 = new THREE.DirectionalLight(0x60a5fa, 0.45);
+      dirLight2.position.set(-30, 20, -25);
+      bannerScene.add(dirLight2);
+
+      // Сітка столу 3D-принтера
+      const gridHelper = new THREE.GridHelper(36, 12, 0x3b82f6, 0x1e293b);
+      gridHelper.position.y = -9;
+      bannerScene.add(gridHelper);
+
+      bannerMaterial = new THREE.MeshStandardMaterial({
+        color: currentBannerColor,
+        roughness: 0.3,
+        metalness: 0.15
+      });
+
+      buildBannerShape('castle');
+
+      const ro = new ResizeObserver(() => {
+        if (!container || !bannerRenderer || !bannerCamera) return;
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+        if (w > 0 && h > 0) {
+          bannerCamera.aspect = w / h;
+          bannerCamera.updateProjectionMatrix();
+          bannerRenderer.setSize(w, h);
+        }
+      });
+      ro.observe(container);
+
+      function animateBanner() {
+        requestAnimationFrame(animateBanner);
+        if (bannerControls) bannerControls.update();
+        if (bannerRenderer && bannerScene && bannerCamera) {
+          bannerRenderer.render(bannerScene, bannerCamera);
+        }
+      }
+      animateBanner();
+    }
+
+    function buildBannerShape(type) {
+      if (!bannerScene || !bannerMaterial) return;
+      if (bannerMeshGroup) {
+        bannerScene.remove(bannerMeshGroup);
+      }
+
+      bannerMeshGroup = new THREE.Group();
+      const accentMat = new THREE.MeshStandardMaterial({
+        color: 0xfacc15,
+        roughness: 0.25,
+        metalness: 0.3
+      });
+
+      if (type === 'castle') {
+        // Фортечна вежа Степанського замку / Органайзер
+        const baseGeo = new THREE.CylinderGeometry(7.5, 9, 14, 8);
+        const baseMesh = new THREE.Mesh(baseGeo, bannerMaterial);
+        baseMesh.position.y = -1.5;
+        bannerMeshGroup.add(baseMesh);
+
+        const rimGeo = new THREE.TorusGeometry(7.6, 0.7, 12, 8);
+        rimGeo.rotateX(Math.PI / 2);
+        const rimMesh = new THREE.Mesh(rimGeo, accentMat);
+        rimMesh.position.y = 5.5;
+        bannerMeshGroup.add(rimMesh);
+
+        // Зубці вежі
+        for (let i = 0; i < 8; i++) {
+          const angle = (i / 8) * Math.PI * 2;
+          const battlementGeo = new THREE.BoxGeometry(2.2, 2.6, 2.2);
+          const bMesh = new THREE.Mesh(battlementGeo, bannerMaterial);
+          bMesh.position.set(Math.cos(angle) * 6.8, 6.8, Math.sin(angle) * 6.8);
+          bMesh.rotation.y = -angle;
+          bannerMeshGroup.add(bMesh);
+        }
+      } else if (type === 'keychain') {
+        // Фірмовий брелок ліцею
+        const bodyGeo = new THREE.CylinderGeometry(10, 10, 2.8, 32);
+        const bodyMesh = new THREE.Mesh(bodyGeo, bannerMaterial);
+        bodyMesh.rotation.x = Math.PI / 5;
+        bannerMeshGroup.add(bodyMesh);
+
+        const ringGeo = new THREE.TorusGeometry(9.2, 0.7, 16, 48);
+        ringGeo.rotateX(Math.PI / 2);
+        const ringMesh = new THREE.Mesh(ringGeo, accentMat);
+        ringMesh.position.y = 1.5;
+        ringMesh.rotation.x = Math.PI / 5;
+        bannerMeshGroup.add(ringMesh);
+
+        const loopGeo = new THREE.TorusGeometry(2.6, 0.65, 16, 32);
+        loopGeo.rotateX(Math.PI / 2);
+        const loopMesh = new THREE.Mesh(loopGeo, accentMat);
+        loopMesh.position.set(0, 4.2, -9.5);
+        loopMesh.rotation.x = Math.PI / 5;
+        bannerMeshGroup.add(loopMesh);
+      } else {
+        // 3D Антистрес вузол (TorusKnot)
+        const knotGeo = new THREE.TorusKnotGeometry(6.5, 2.0, 90, 16);
+        const knotMesh = new THREE.Mesh(knotGeo, bannerMaterial);
+        knotMesh.position.y = 0.5;
+        bannerMeshGroup.add(knotMesh);
+      }
+
+      bannerScene.add(bannerMeshGroup);
+    }
+
+    function setBanner3DColor(hexValue) {
+      currentBannerColor = hexValue;
+      if (bannerMaterial) {
+        bannerMaterial.color.setHex(hexValue);
+      }
+    }
+
+    function switchBanner3DShape(shapeType, titleText) {
+      buildBannerShape(shapeType);
+      const titleEl = document.getElementById("banner-3d-title");
+      if (titleEl && titleText) titleEl.innerText = titleText;
+
+      document.querySelectorAll(".banner-shape-btn").forEach(btn => {
+        if (btn.getAttribute("onclick") && btn.getAttribute("onclick").includes(`'${shapeType}'`)) {
+          btn.className = "banner-shape-btn px-2.5 py-1 rounded-lg text-[10px] font-bold bg-blue-600 text-white border border-blue-500 transition";
+        } else {
+          btn.className = "banner-shape-btn px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 transition";
+        }
+      });
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
       loadProductsFromStorage();
       loadCategoriesFromStorage();
@@ -2010,6 +2245,7 @@
       setupEventListeners();
       renderProducts();
       initFirebaseRealtimeSync();
+      setTimeout(initBanner3DViewer, 80);
       if (window.lucide) lucide.createIcons();
     });
 
