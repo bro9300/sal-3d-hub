@@ -1,6 +1,30 @@
 <!DOCTYPE html>
 <html lang="uk" class="h-full scroll-smooth">
 <head>
+  <!-- Firebase SDK (Realtime Database Sync) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyClo4I8NdaNHzdx7QwWO-SYWYY1-G_GmUs",
+      authDomain: "d-sal-hub.firebaseapp.com",
+      databaseURL: "https://d-sal-hub-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "d-sal-hub",
+      storageBucket: "d-sal-hub.firebasestorage.app",
+      messagingSenderId: "266227911670",
+      appId: "1:266227911670:web:d352f14de2668b82b095d7",
+      measurementId: "G-MCY75CBW71"
+    };
+
+    let db = null;
+    try {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.database();
+    } catch (err) {
+      console.warn("Firebase ініціалізація:", err);
+    }
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
   <meta name="author" content="Роман Берник (@bro9301)">
@@ -606,10 +630,11 @@
 
         <button 
           type="submit" 
+          id="checkout-submit-btn"
           class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition active:scale-95 flex items-center justify-center gap-1.5"
         >
           <i data-lucide="check-circle" class="w-4 h-4"></i>
-          Підтвердити замовлення
+          <span>Підтвердити замовлення</span>
         </button>
       </form>
     </div>
@@ -722,20 +747,52 @@
       </div>
 
       <div class="flex-1 overflow-y-auto pt-3 space-y-4 no-scrollbar">
-        <!-- Панель керування базою (експорт/імпорт) -->
+        <!-- Панель керування хмарною базою Firebase (експорт/імпорт/синхронізація) -->
         <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs">
-          <span id="admin-total-badge" class="font-bold text-blue-800">29 товарів у базі</span>
-          <div class="flex gap-1.5">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span id="admin-total-badge" class="font-bold text-blue-800">29 товарів у базі</span>
+            <span id="firebase-sync-badge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-300">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Firebase Online
+            </span>
+          </div>
+          <div class="flex gap-1.5 flex-wrap">
+            <button type="button" onclick="syncAllToFirebase()" class="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-800 font-bold hover:bg-blue-200 transition flex items-center gap-1" title="Примусово вивантажити каталог у Firebase">
+              ☁️ Синхронізувати з хмарою
+            </button>
             <button type="button" onclick="exportProductsJSON()" class="px-2.5 py-1 rounded-lg bg-slate-200 text-slate-800 font-bold hover:bg-slate-300 transition">
-              Експорт
+              Експорт JSON
             </button>
             <label class="px-2.5 py-1 rounded-lg bg-slate-200 text-slate-800 font-bold cursor-pointer hover:bg-slate-300 transition">
-              Імпорт
+              Імпорт JSON
               <input type="file" id="import-json-input" accept=".json" class="hidden" onchange="importProductsJSON(event)">
             </label>
             <button type="button" onclick="resetToDefaultProducts()" class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 font-bold border border-rose-200 hover:bg-rose-100 transition">
               Скинути до дефолту
             </button>
+          </div>
+        </div>
+
+        <!-- 0. БЛОК ЗАМОВЛЕНЬ ІЗ FIREBASE REALTIME DATABASE -->
+        <div class="bg-emerald-50/80 p-3 sm:p-4 rounded-2xl border border-emerald-200 space-y-2.5">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow">
+                📦
+              </div>
+              <div>
+                <h4 class="text-xs font-black uppercase text-slate-800">Останні замовлення (Firebase Realtime DB)</h4>
+                <p class="text-[10px] text-slate-500">Замовлення від учнів та гостей оновлюються в реальному часі</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span id="admin-orders-count" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">0 замовлень</span>
+              <button type="button" onclick="clearAllFirebaseOrders()" class="px-2 py-0.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[10px] font-bold transition">
+                Очистити історію
+              </button>
+            </div>
+          </div>
+          <div id="admin-orders-list" class="max-h-52 overflow-y-auto space-y-2 pr-1 text-xs">
+            <p class="text-slate-400 text-[11px] py-2 text-center">Завантаження замовлень із хмари...</p>
           </div>
         </div>
 
@@ -1629,7 +1686,18 @@
       "Чорний матовий": 0x1e293b,
       "Білий мармур": 0xe2e8f0,
       "Золотистий шовк": 0xd97706,
-      "Смарагдовий": 0x059669
+      "Сріблястий шовк": 0x94a3b8,
+      "Смарагдовий": 0x059669,
+      "Бірюзовий": 0x06b6d4,
+      "Фіолетовий": 0x7c3aed,
+      "Червоний рубін": 0xdc2626,
+      "Небесно-блакитний": 0x38bdf8,
+      "Бежевий шовк": 0xd6d3d1,
+      "Рожевий": 0xec4899,
+      "Помаранчевий": 0xf97316,
+      "Салатовий": 0x84cc16,
+      "Коричневий": 0x78350f,
+      "Сірий графіт": 0x475569
     };
 
     function initStlViewer(containerId, initialColorName, demoShape = 'cylinder', stlUrl = null) {
@@ -1792,10 +1860,13 @@
       }
     }
 
-    function saveCategoriesToStorage() {
+    function saveCategoriesToStorage(syncCloud = true) {
       try {
         localStorage.setItem(STORAGE_KEY_CATEGORIES, JSON.stringify(categories));
       } catch (e) {}
+      if (syncCloud && db) {
+        db.ref("categories").set(categories).catch(err => console.warn("Помилка запису категорій у Firebase:", err));
+      }
     }
 
     function renderCategoryPills() {
@@ -1924,8 +1995,10 @@
     }
 
     /* =========================================================
-       ІНІЦІАЛІЗАЦІЯ СТОРІНКИ
+       ІНІЦІАЛІЗАЦІЯ СТОРІНКИ ТА ХМАРНА СИНХРОНІЗАЦІЯ FIREBASE
        ========================================================= */
+    let firebaseOrders = [];
+
     document.addEventListener("DOMContentLoaded", () => {
       loadProductsFromStorage();
       loadCategoriesFromStorage();
@@ -1936,8 +2009,219 @@
       updateMonobankUIStatus();
       setupEventListeners();
       renderProducts();
+      initFirebaseRealtimeSync();
       if (window.lucide) lucide.createIcons();
     });
+
+    function initFirebaseRealtimeSync() {
+      if (!db) {
+        updateFirebaseBadge(false);
+        return;
+      }
+
+      // Відстеження з'єднання з Firebase
+      db.ref(".info/connected").on("value", (snap) => {
+        updateFirebaseBadge(snap.val() === true);
+      });
+
+      // 1. Синхронізація товарів (products) у реальному часі
+      db.ref("products").on("value", (snapshot) => {
+        const val = snapshot.val();
+        if (val) {
+          const cloudProducts = Array.isArray(val) ? val.filter(Boolean) : Object.values(val).filter(Boolean);
+          if (cloudProducts.length > 0) {
+            products = cloudProducts;
+            saveProductsToStorage(false);
+            renderProducts();
+            renderCategoryPills();
+            if (isAdminAuthenticated) renderAdminProductsTable();
+          }
+        } else {
+          // Якщо база Firebase порожня (перший запуск), ініціалізуємо її поточними товарами
+          db.ref("products").set(products).catch(err => console.warn("Помилка початкового запису товарів у Firebase:", err));
+        }
+      }, (err) => {
+        console.warn("Firebase products read error:", err);
+      });
+
+      // 2. Синхронізація категорій (categories) у реальному часі
+      db.ref("categories").on("value", (snapshot) => {
+        const val = snapshot.val();
+        if (val) {
+          const cloudCats = Array.isArray(val) ? val.filter(Boolean) : Object.values(val).filter(Boolean);
+          if (cloudCats.length > 0) {
+            categories = cloudCats;
+            saveCategoriesToStorage(false);
+            renderCategoryPills();
+            if (isAdminAuthenticated) renderAdminCategories();
+          }
+        } else {
+          db.ref("categories").set(categories).catch(() => {});
+        }
+      });
+
+      // 3. Синхронізація налаштувань (settings: Monobank та Telegram)
+      db.ref("settings").on("value", (snapshot) => {
+        const s = snapshot.val();
+        if (s) {
+          if (s.monobankJarLink) {
+            monobankJarLink = s.monobankJarLink;
+            localStorage.setItem(STORAGE_KEY_MONO_JAR, monobankJarLink);
+          }
+          if (s.monobankJarTitle) {
+            monobankJarTitle = s.monobankJarTitle;
+            localStorage.setItem(STORAGE_KEY_MONO_TITLE, monobankJarTitle);
+          }
+          if (s.telegramBotToken !== undefined) {
+            telegramBotToken = s.telegramBotToken;
+            localStorage.setItem(STORAGE_KEY_TG_TOKEN, telegramBotToken);
+          }
+          if (s.telegramChatId !== undefined) {
+            telegramChatId = s.telegramChatId;
+            localStorage.setItem(STORAGE_KEY_TG_CHAT_ID, telegramChatId);
+          }
+          if (s.telegramUsername) {
+            telegramUsername = s.telegramUsername;
+            localStorage.setItem(STORAGE_KEY_TG_USERNAME, telegramUsername);
+          }
+          updateTelegramUIStatus();
+          updateMonobankUIStatus();
+        }
+      });
+
+      // 4. Синхронізація замовлень (orders) у реальному часі
+      db.ref("orders").on("value", (snapshot) => {
+        const val = snapshot.val();
+        if (val) {
+          firebaseOrders = Object.entries(val).map(([key, item]) => ({
+            firebaseKey: key,
+            ...item
+          })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        } else {
+          firebaseOrders = [];
+        }
+        if (isAdminAuthenticated) renderAdminOrdersList();
+      });
+    }
+
+    function updateFirebaseBadge(isOnline) {
+      const badge = document.getElementById("firebase-sync-badge");
+      if (!badge) return;
+      if (isOnline) {
+        badge.className = "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-300";
+        badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Firebase Online';
+      } else {
+        badge.className = "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-300";
+        badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Локальний режим';
+      }
+    }
+
+    function syncAllToFirebase() {
+      if (!db) {
+        showToast("Помилка: Firebase не ініціалізовано");
+        return;
+      }
+      Promise.all([
+        db.ref("products").set(products),
+        db.ref("categories").set(categories),
+        db.ref("settings").set({
+          monobankJarLink,
+          monobankJarTitle,
+          telegramBotToken,
+          telegramChatId,
+          telegramUsername
+        })
+      ]).then(() => {
+        showToast("☁️ Всі товари, категорії та налаштування синхронізовано з Firebase!");
+      }).catch((err) => {
+        console.warn("Firebase sync error:", err);
+        showToast("❌ Помилка запису у Firebase (перевірте Rules)");
+      });
+    }
+
+    function renderAdminOrdersList() {
+      const countEl = document.getElementById("admin-orders-count");
+      const listEl = document.getElementById("admin-orders-list");
+      if (!listEl) return;
+
+      if (countEl) countEl.innerText = `${firebaseOrders.length} замовлень`;
+
+      if (firebaseOrders.length === 0) {
+        listEl.innerHTML = '<p class="text-slate-400 text-[11px] py-3 text-center">Замовлень у хмарній базі поки немає.</p>';
+        return;
+      }
+
+      listEl.innerHTML = firebaseOrders.map(ord => {
+        const itemsSummary = Array.isArray(ord.items) 
+          ? ord.items.map(i => `${i.title} (${i.color}, ${i.quantity} шт.)`).join(', ')
+          : '';
+        const statusColor = ord.status === 'Виконано' 
+          ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
+          : 'bg-amber-100 text-amber-800 border-amber-300';
+
+        return `
+          <div class="p-2.5 bg-white rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-xs">
+            <div class="space-y-0.5 min-w-0 flex-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-black text-blue-700">${ord.orderNumber || '#STL'}</span>
+                <span class="font-bold text-slate-900">${ord.fullname || 'Гість'}</span>
+                <span class="text-[10px] text-slate-500">(${ord.role || ''}${ord.userClass ? ', ' + ord.userClass : ''})</span>
+                <span class="text-[10px] font-bold px-2 py-0.2 rounded-full border ${statusColor}">${ord.status || 'Нове'}</span>
+              </div>
+              <div class="text-[11px] text-slate-600 truncate" title="${itemsSummary}">
+                🛒 ${itemsSummary}
+              </div>
+              <div class="text-[10px] text-slate-400 flex items-center gap-2 flex-wrap">
+                <span>📞 ${ord.phone || ''}</span>
+                <span>• 💰 <strong class="text-slate-700">${ord.totalText || ''}</strong> (${ord.paymentMethod === 'monobank' ? '🐱 Monobank' : '💵 Готівка'})</span>
+                <span>• 🕒 ${ord.dateFormatted || ''}</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button 
+                type="button" 
+                onclick="toggleOrderStatus('${ord.firebaseKey}', '${ord.status || 'Нове'}')" 
+                class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 hover:text-emerald-800 font-bold text-[10px] transition"
+                title="Змінити статус"
+              >
+                ✓ Статус
+              </button>
+              <button 
+                type="button" 
+                onclick="deleteFirebaseOrder('${ord.firebaseKey}')" 
+                class="p-1 text-slate-400 hover:text-rose-600 rounded-lg transition"
+                title="Видалити замовлення"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleOrderStatus(firebaseKey, currentStatus) {
+      if (!db || !firebaseKey) return;
+      const nextStatus = currentStatus === 'Виконано' ? 'В роботі (3D-друк)' : 'Виконано';
+      db.ref(`orders/${firebaseKey}/status`).set(nextStatus).then(() => {
+        showToast(`Статус змінено на «${nextStatus}»`);
+      });
+    }
+
+    function deleteFirebaseOrder(firebaseKey) {
+      if (!db || !firebaseKey) return;
+      db.ref(`orders/${firebaseKey}`).remove().then(() => {
+        showToast("Замовлення видалено з бази");
+      });
+    }
+
+    function clearAllFirebaseOrders() {
+      if (!db) return;
+      if (!confirm("Очистити всю історію замовлень із Firebase?")) return;
+      db.ref("orders").remove().then(() => {
+        showToast("Історію замовлень очищено");
+      });
+    }
 
     function loadProductsFromStorage() {
       try {
@@ -1955,10 +2239,13 @@
       }
     }
 
-    function saveProductsToStorage() {
+    function saveProductsToStorage(syncCloud = true) {
       try {
         localStorage.setItem(STORAGE_KEY_PRODUCTS, JSON.stringify(products));
       } catch (e) {}
+      if (syncCloud && db) {
+        db.ref("products").set(products).catch(err => console.warn("Помилка синхронізації товарів із Firebase:", err));
+      }
     }
 
     function setupEventListeners() {
@@ -2630,6 +2917,14 @@
       localStorage.setItem(STORAGE_KEY_TG_CHAT_ID, chatId);
       localStorage.setItem(STORAGE_KEY_TG_USERNAME, telegramUsername);
 
+      if (db) {
+        db.ref("settings").update({
+          telegramBotToken: token,
+          telegramChatId: chatId,
+          telegramUsername: telegramUsername
+        }).catch(() => {});
+      }
+
       updateTelegramUIStatus();
       showToast("Налаштування Telegram збережено!");
     }
@@ -2701,6 +2996,12 @@
       monobankJarTitle = title || "Банка STEM-хабу на пластик та ЗСУ 🇺🇦";
       localStorage.setItem(STORAGE_KEY_MONO_JAR, monobankJarLink);
       localStorage.setItem(STORAGE_KEY_MONO_TITLE, monobankJarTitle);
+      if (db) {
+        db.ref("settings").update({
+          monobankJarLink: monobankJarLink,
+          monobankJarTitle: monobankJarTitle
+        }).catch(() => {});
+      }
       updateMonobankUIStatus();
       showToast("Банку Monobank збережено!");
     }
@@ -2825,6 +3126,41 @@
         totalText: totalText,
         monoUrl: monoPaymentUrl
       };
+
+      // Збереження замовлення у Firebase Realtime Database (db.ref("orders"))
+      if (db) {
+        try {
+          const orderPayload = {
+            orderNumber: orderNumber,
+            fullname: fullname,
+            role: role,
+            userClass: userClass || "",
+            phone: phone,
+            deliveryMethod: deliveryMethod,
+            deliveryLabel: deliveryLabel,
+            paymentMethod: paymentMethod,
+            totalText: totalText,
+            fixedTotal: fixedTotal,
+            hasNegotiable: hasNegotiable,
+            status: "Нове",
+            createdAt: Date.now(),
+            dateFormatted: new Date().toLocaleString('uk-UA'),
+            items: cart.map(item => ({
+              id: item.id,
+              title: item.title,
+              price: item.price,
+              color: item.color,
+              quantity: item.quantity,
+              customNote: item.customNote || "",
+              attachedFileName: item.attachedFileName || "",
+              isNegotiable: !!item.isNegotiable
+            }))
+          };
+          await db.ref("orders").push(orderPayload);
+        } catch (fbErr) {
+          console.warn("Помилка запису замовлення у Firebase:", fbErr);
+        }
+      }
 
       let sentViaBot = false;
       const filesToSend = cart.filter(i => i.fileObj).map(i => i.fileObj);
@@ -2985,6 +3321,8 @@
     function openAdminAccessModal() {
       if (isAdminAuthenticated) {
         renderAdminProductsTable();
+        renderAdminCategories();
+        renderAdminOrdersList();
         updateTelegramUIStatus();
         updateMonobankUIStatus();
         const m = document.getElementById("admin-panel-modal");
