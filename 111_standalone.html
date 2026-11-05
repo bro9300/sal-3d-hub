@@ -2563,8 +2563,8 @@
         const pid = Number(p.id) || Date.now();
         const useDefaultMarker = DEFAULT_IMAGE_MAP[pid] && isDefaultProductImage(pid, p.image);
         const cloudImg = useDefaultMarker ? `__DEFAULT_IMG__:${pid}` : (p.image || "");
-        // Якщо STL занадто великий (>250 KB), зберігаємо його окремо, щоб не гальмувати каталог
-        const stlVal = (p.stlUrl && p.stlUrl.length < 250000) ? p.stlUrl : null;
+        // STL зберігається повністю в Firebase разом із записом товару
+        const stlVal = p.stlUrl || null; // Передаємо STL повністю, не відкидаємо великі моделі
         return {
           id: pid,
           title: String(p.title || "3D Виріб"),
