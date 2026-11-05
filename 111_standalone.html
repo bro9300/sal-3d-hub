@@ -1,10 +1,42 @@
 <!DOCTYPE html>
 <html lang="uk" class="h-full scroll-smooth">
 <head>
+  <!-- Firebase SDK (Realtime Database Sync) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyClo4I8NdaNHzdx7QwWO-SYWYY1-G_GmUs",
+      authDomain: "d-sal-hub.firebaseapp.com",
+      databaseURL: "https://d-sal-hub-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "d-sal-hub",
+      storageBucket: "d-sal-hub.firebasestorage.app",
+      messagingSenderId: "266227911670",
+      appId: "1:266227911670:web:d352f14de2668b82b095d7",
+      measurementId: "G-MCY75CBW71"
+    };
+
+    let db = null;
+    try {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.database();
+    } catch (err) {
+      console.warn("Firebase ініціалізація:", err);
+    }
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
   <meta name="author" content="Роман Берник (@bro9301)">
   <title>Степанський академічний ліцей 3D Shop — Офіційний мерч STEM-хабу</title>
+  <meta name="description" content="Офіційний 3D-мерч STEM-хабу Степанського академічного ліцею (смт Степань, Сарненський р-н, Рівненська обл.). 3D-друк брелоків, підставок для гаджетів, деталей для FPV-дронів, сувенірів та індивідуальних замовлень на підтримку ЗСУ.">
+  <meta name="keywords" content="Степанський академічний ліцей, Степань 3D Shop, 3D друк Степань, STEM хаб САЛ, мерч ліцею, деталі FPV, Сарненський район, Роман Берник">
+  <meta property="og:title" content="Степанський академічний ліцей 3D Shop — Офіційний мерч STEM-хабу">
+  <meta property="og:description" content="Інтерактивна 3D-вітрина виробів учнів Степанського ліцею з екологічного PLA-пластику. Кошти йдуть на філамент та підтримку ЗСУ.">
+  <meta property="og:type" content="website">
+  <!-- Фавіконка сайту (3D логотип STEM-хабу) -->
+  <link rel=icon href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='24' fill='%232563eb'/><path d='M50 20 L78 36 L78 68 L50 84 L22 68 L22 36 Z' fill='%231d4ed8' stroke='white' stroke-width='4.5'/><path d='M50 20 L50 52 L78 68 M50 52 L22 68' stroke='white' stroke-width='4.5'/><text x='50' y='60' font-family='sans-serif' font-weight='900' font-size='20' fill='%23facc15' text-anchor='middle'>3D</text></svg>">
+
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -69,8 +101,23 @@
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
-    #stl-canvas-container canvas {
+    #stl-canvas-container canvas,
+    #banner-3d-container canvas {
       touch-action: none; /* Запобігає конфлікту скролу сторінки під час обертання 3D */
+    }
+    @keyframes soft-pulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.45); }
+      50% { transform: scale(1.03); box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
+    }
+    .animate-soft-pulse {
+      animation: soft-pulse 2.5s infinite ease-in-out;
+    }
+    @keyframes amber-glow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.35); }
+      50% { box-shadow: 0 0 14px 4px rgba(251, 191, 36, 0.25); }
+    }
+    .animate-amber-glow {
+      animation: amber-glow 3s infinite ease-in-out;
     }
   </style>
 </head>
@@ -78,8 +125,8 @@
 
   <!-- Оголошення місії -->
   <aside class="bg-slate-950 text-white text-[11px] sm:text-xs py-2 px-3 text-center font-medium shadow-inner flex items-center justify-center gap-2 flex-wrap border-b border-blue-900/40">
-    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-extrabold uppercase tracking-wider border border-amber-400/30">
-      <i data-lucide="printer" class="w-3 h-3"></i> STEM САЛ
+    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-extrabold uppercase tracking-wider border border-amber-400/30 animate-amber-glow">
+      <i data-lucide="printer" class="w-3 h-3 animate-bounce"></i> STEM САЛ
     </span>
     <span class="leading-tight">Кошти йдуть на котушки еко-пластику та підтримку ЗСУ 🇺🇦</span>
     <span class="text-blue-300/80 text-[10px] hidden sm:inline">• смт Степань</span>
@@ -179,12 +226,15 @@
     </div>
   </header>
 
-  <!-- Банер -->
+  <!-- Банер із інтерактивною 3D-сценою (Three.js) -->
   <section class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-2 w-full">
-    <div class="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-slate-900 text-white p-5 sm:p-10 shadow-xl border border-slate-800 grid-pattern">
-      <div class="relative z-10 max-w-3xl flex flex-col items-start gap-3 sm:gap-4">
+    <div class="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-slate-900 text-white p-5 sm:p-8 lg:p-10 shadow-xl border border-slate-800 grid-pattern grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+      
+      <!-- Ліва колонка: текст та кнопки дій -->
+      <div class="relative z-10 lg:col-span-7 flex flex-col items-start gap-3 sm:gap-4">
         <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span class="w-2 h-2 rounded-full bg-emerald-400 -ml-3.5"></span>
           Степанський ліцей • Сарненщина
         </div>
         
@@ -192,21 +242,67 @@
           3D-мерч, створений ліцеїстами.
         </h1>
         
-        <p class="text-slate-300 text-xs sm:text-sm sm:leading-relaxed">
-          Кожен виріб розроблено та надруковано на базі STEM-лабораторії ліцею з екологічного PLA-пластику. Оглядайте у 3D прямо в телефоні та замовляйте з власним гравіюванням!
+        <p class="text-slate-300 text-xs sm:text-sm sm:leading-relaxed max-w-2xl">
+          Кожен виріб розроблено та надруковано на базі STEM-лабораторії ліцею з екологічного PLA-пластику. Обертайте 3D-модель просто зараз та замовляйте сувеніри з власним гравіюванням!
         </p>
 
         <div class="flex flex-wrap gap-2.5 pt-2 w-full sm:w-auto">
-          <a href="#catalog" class="flex-1 sm:flex-none justify-center px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm transition shadow-md flex items-center gap-1.5 active:scale-95 text-center">
-            Вітрина
-            <i data-lucide="arrow-down" class="w-3.5 h-3.5"></i>
+          <a href="#catalog" class="flex-1 sm:flex-none justify-center px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm transition shadow-md flex items-center gap-1.5 active:scale-95 text-center animate-soft-pulse">
+            Вітрина (29)
+            <i data-lucide="arrow-down" class="w-3.5 h-3.5 animate-bounce"></i>
           </a>
-          <button onclick="openCustomOrderModal()" class="flex-1 sm:flex-none justify-center px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs sm:text-sm transition flex items-center gap-1.5">
-            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i>
-            Свій напис
+          <button onclick="openCustomOrderModal()" class="flex-1 sm:flex-none justify-center px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs sm:text-sm transition flex items-center gap-1.5 animate-amber-glow">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400 animate-pulse"></i>
+            Свій напис / .STL
+          </button>
+        </div>
+
+        <!-- Швидкі переваги -->
+        <div class="pt-2 flex items-center gap-4 text-[11px] text-slate-400 flex-wrap">
+          <span class="flex items-center gap-1"><i data-lucide="rotate-3d" class="w-3.5 h-3.5 text-blue-400"></i> 360° 3D-огляд</span>
+          <span class="flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i> Еко-пластик PLA</span>
+          <span class="flex items-center gap-1"><i data-lucide="heart" class="w-3.5 h-3.5 text-amber-400"></i> Підтримка ЗСУ 🇺🇦</span>
+        </div>
+      </div>
+
+      <!-- Права колонка: жива інтерактивна 3D-модель (Three.js) -->
+      <div class="lg:col-span-5 relative flex flex-col items-center justify-center">
+        <div class="w-full h-60 sm:h-72 rounded-2xl bg-slate-950/80 border border-slate-800/90 overflow-hidden relative shadow-2xl flex items-center justify-center group">
+          <div id="banner-3d-container" class="w-full h-full cursor-grab active:cursor-grabbing"></div>
+
+          <!-- Бейдж підказки -->
+          <div class="absolute top-3 left-3 text-[10px] bg-slate-900/80 text-blue-300 px-2.5 py-1 rounded-lg backdrop-blur-md border border-slate-700/70 pointer-events-none font-bold flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+            <span id="banner-3d-title">Фортечна вежа САЛ</span>
+          </div>
+
+          <div class="absolute bottom-3 right-3 text-[10px] bg-blue-600/85 text-white px-2.5 py-1 rounded-lg backdrop-blur-sm pointer-events-none font-semibold flex items-center gap-1 shadow">
+            <i data-lucide="hand" class="w-3 h-3"></i> Крутіть мишкою / пальцем
+          </div>
+
+          <!-- Перемикач кольорів пластику прямо на банері -->
+          <div class="absolute bottom-3 left-3 flex items-center gap-1.5 bg-slate-900/85 p-1.5 rounded-xl border border-slate-800 backdrop-blur-md">
+            <button type="button" onclick="setBanner3DColor(0x2563eb)" title="Синій (Ліцей)" class="w-4 h-4 rounded-full bg-blue-600 border border-white/50 hover:scale-125 transition"></button>
+            <button type="button" onclick="setBanner3DColor(0xfacc15)" title="Жовтий (Патріот)" class="w-4 h-4 rounded-full bg-amber-400 border border-white/50 hover:scale-125 transition"></button>
+            <button type="button" onclick="setBanner3DColor(0x059669)" title="Смарагдовий" class="w-4 h-4 rounded-full bg-emerald-600 border border-white/50 hover:scale-125 transition"></button>
+            <button type="button" onclick="setBanner3DColor(0xe2e8f0)" title="Білий мармур" class="w-4 h-4 rounded-full bg-slate-200 border border-white/50 hover:scale-125 transition"></button>
+          </div>
+        </div>
+
+        <!-- Перемикач 3D-фігур під сценою -->
+        <div class="flex items-center justify-center gap-1.5 mt-2.5 flex-wrap">
+          <button type="button" onclick="switchBanner3DShape('castle', 'Фортечна вежа САЛ')" class="banner-shape-btn px-2.5 py-1 rounded-lg text-[10px] font-bold bg-blue-600 text-white border border-blue-500 transition">
+            🏰 Вежа САЛ
+          </button>
+          <button type="button" onclick="switchBanner3DShape('keychain', '3D Брелок ліцею')" class="banner-shape-btn px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 transition">
+            🔑 Брелок
+          </button>
+          <button type="button" onclick="switchBanner3DShape('knot', 'Антистрес вузол')" class="banner-shape-btn px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 transition">
+            🧩 Антистрес
           </button>
         </div>
       </div>
+
     </div>
   </section>
 
@@ -603,10 +699,11 @@
 
         <button 
           type="submit" 
+          id="checkout-submit-btn"
           class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition active:scale-95 flex items-center justify-center gap-1.5"
         >
           <i data-lucide="check-circle" class="w-4 h-4"></i>
-          Підтвердити замовлення
+          <span>Підтвердити замовлення</span>
         </button>
       </form>
     </div>
@@ -719,20 +816,52 @@
       </div>
 
       <div class="flex-1 overflow-y-auto pt-3 space-y-4 no-scrollbar">
-        <!-- Панель керування базою (експорт/імпорт) -->
+        <!-- Панель керування хмарною базою Firebase (експорт/імпорт/синхронізація) -->
         <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs">
-          <span id="admin-total-badge" class="font-bold text-blue-800">29 товарів у базі</span>
-          <div class="flex gap-1.5">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span id="admin-total-badge" class="font-bold text-blue-800">29 товарів у базі</span>
+            <span id="firebase-sync-badge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-300">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Firebase Online
+            </span>
+          </div>
+          <div class="flex gap-1.5 flex-wrap">
+            <button type="button" onclick="syncAllToFirebase()" class="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-800 font-bold hover:bg-blue-200 transition flex items-center gap-1" title="Примусово вивантажити каталог у Firebase">
+              ☁️ Синхронізувати з хмарою
+            </button>
             <button type="button" onclick="exportProductsJSON()" class="px-2.5 py-1 rounded-lg bg-slate-200 text-slate-800 font-bold hover:bg-slate-300 transition">
-              Експорт
+              Експорт JSON
             </button>
             <label class="px-2.5 py-1 rounded-lg bg-slate-200 text-slate-800 font-bold cursor-pointer hover:bg-slate-300 transition">
-              Імпорт
+              Імпорт JSON
               <input type="file" id="import-json-input" accept=".json" class="hidden" onchange="importProductsJSON(event)">
             </label>
             <button type="button" onclick="resetToDefaultProducts()" class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 font-bold border border-rose-200 hover:bg-rose-100 transition">
               Скинути до дефолту
             </button>
+          </div>
+        </div>
+
+        <!-- 0. БЛОК ЗАМОВЛЕНЬ ІЗ FIREBASE REALTIME DATABASE -->
+        <div class="bg-emerald-50/80 p-3 sm:p-4 rounded-2xl border border-emerald-200 space-y-2.5">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow">
+                📦
+              </div>
+              <div>
+                <h4 class="text-xs font-black uppercase text-slate-800">Останні замовлення (Firebase Realtime DB)</h4>
+                <p class="text-[10px] text-slate-500">Замовлення від учнів та гостей оновлюються в реальному часі</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span id="admin-orders-count" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">0 замовлень</span>
+              <button type="button" onclick="clearAllFirebaseOrders()" class="px-2 py-0.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[10px] font-bold transition">
+                Очистити історію
+              </button>
+            </div>
+          </div>
+          <div id="admin-orders-list" class="max-h-52 overflow-y-auto space-y-2 pr-1 text-xs">
+            <p class="text-slate-400 text-[11px] py-2 text-center">Завантаження замовлень із хмари...</p>
           </div>
         </div>
 
@@ -853,34 +982,86 @@
           </div>
         </div>
 
-        <!-- 4. ФОРМА ДОДАВАННЯ ТОВАРУ ТА СПИСОК АКТИВНИХ МОДЕЛЕЙ -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Форма -->
-          <form id="add-product-form" onsubmit="handleAddNewProduct(event)" class="space-y-2.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
-            <h4 class="text-xs font-black uppercase text-slate-800">Додати товар до каталогу</h4>
-            <input type="text" id="new-title" required placeholder="Назва моделі" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
-            
-            <div class="grid grid-cols-2 gap-2">
-              <select id="new-category" class="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
-                <option value="Брелоки та аксесуари">🔑 Брелоки та аксесуари</option>
-                <option value="Органайзери та підставки">📱 Органайзери та підставки</option>
-                <option value="Деталі FPV та дронів">🚁 Деталі FPV та дронів</option>
-                <option value="Сувеніри та мініатюри">🏰 Сувеніри та мініатюри</option>
-                <option value="Декор та побут">🏺 Декор та побут</option>
-                <option value="Головоломки та антистрес">🧩 Головоломки та антистрес</option>
-              </select>
-              <input type="number" id="new-price" required min="1" placeholder="Ціна ₴" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
+        <!-- 4. ФОРМА ДОДАВАННЯ ТА РЕДАГУВАННЯ ТОВАРУ І СПИСОК АКТИВНИХ МОДЕЛЕЙ -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+          <!-- Форма додавання / редагування -->
+          <form id="add-product-form" onsubmit="handleAddNewProduct(event)" class="space-y-2.5 bg-slate-50 p-3.5 rounded-2xl border border-slate-200 transition-all duration-200">
+            <input type="hidden" id="editing-product-id" value="">
+
+            <div class="flex items-center justify-between gap-2 pb-1 border-b border-slate-200/80">
+              <div class="flex items-center gap-1.5">
+                <span id="product-form-mode-badge" class="hidden px-2 py-0.5 rounded-md bg-amber-500 text-white text-[10px] font-black uppercase">Режим редагування</span>
+                <h4 id="product-form-title" class="text-xs font-black uppercase text-slate-800">Додати товар до каталогу</h4>
+              </div>
+              <button type="button" id="cancel-edit-btn" onclick="cancelEditProduct()" class="hidden px-2.5 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-[10px] transition flex items-center gap-1">
+                ✕ Скасувати
+              </button>
             </div>
 
-            <div class="grid grid-cols-2 gap-2">
-              <input type="text" id="new-author" placeholder="Автор моделі (напр. Богдан Ч.)" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
-              <input type="text" id="new-badge" placeholder="Бейдж (Хіт, Новинка)" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Назва моделі *:</label>
+              <input type="text" id="new-title" required placeholder="Назва моделі" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div class="sm:col-span-1">
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Категорія:</label>
+                <select id="new-category" class="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
+                  <option value="Брелоки та аксесуари">🔑 Брелоки та аксесуари</option>
+                  <option value="Органайзери та підставки">📱 Органайзери та підставки</option>
+                  <option value="Деталі FPV та дронів">🚁 Деталі FPV та дронів</option>
+                  <option value="Сувеніри та мініатюри">🏰 Сувеніри та мініатюри</option>
+                  <option value="Декор та побут">🏺 Декор та побут</option>
+                  <option value="Головоломки та антистрес">🧩 Головоломки та антистрес</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Ціна (₴) *:</label>
+                <input type="number" id="new-price" required min="1" placeholder="Ціна ₴" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Стара ціна (₴):</label>
+                <input type="number" id="new-old-price" min="0" placeholder="Без знижки" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div>
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Автор моделі:</label>
+                <input type="text" id="new-author" placeholder="Напр. Богдан Ч." class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Текст бейджа:</label>
+                <input type="text" id="new-badge" placeholder="Хіт, Новинка, Кастом" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Колір бейджа:</label>
+                <select id="new-badge-color" class="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
+                  <option value="bg-blue-600 text-white">🔵 Синій (Стандарт)</option>
+                  <option value="bg-blue-700 text-white">🔷 Темно-синій</option>
+                  <option value="bg-amber-500 text-white">🟡 Бурштиновий (Кастом)</option>
+                  <option value="bg-amber-600 text-white">🟠 Темно-жовтий</option>
+                  <option value="bg-orange-500 text-white">🟧 Помаранчевий</option>
+                  <option value="bg-emerald-600 text-white">🟢 Смарагдовий (Еко/Новинка)</option>
+                  <option value="bg-teal-600 text-white">🩵 Бірюзовий</option>
+                  <option value="bg-sky-600 text-white">☁️ Блакитний</option>
+                  <option value="bg-indigo-600 text-white">🟣 Індиго</option>
+                  <option value="bg-indigo-700 text-white">🌌 Темний індиго</option>
+                  <option value="bg-purple-600 text-white">🔮 Фіолетовий</option>
+                  <option value="bg-rose-500 text-white">🔴 Рожево-червоний (Топ/Акція)</option>
+                  <option value="bg-slate-800 text-white">⚫ Темний графіт (FPV/PRO)</option>
+                </select>
+              </div>
             </div>
 
             <div class="grid grid-cols-2 gap-2">
               <div>
                 <label class="block text-[10px] font-bold text-slate-600 mb-0.5">3D-модель (.STL файл):</label>
                 <input type="file" id="new-stl-file" accept=".stl" class="w-full text-[10px] text-slate-500 file:mr-1.5 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:font-bold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 cursor-pointer">
+                <div id="edit-stl-status-bar" class="hidden mt-1 flex items-center justify-between gap-1 bg-blue-50 border border-blue-200 rounded-md px-2 py-0.5 text-[10px] text-blue-800">
+                  <span id="edit-stl-status-text" class="truncate font-semibold">✅ .STL прикріплено</span>
+                  <button type="button" onclick="clearEditingProductStl()" class="text-rose-600 hover:text-rose-800 font-bold shrink-0" title="Видалити прикріплений STL">Очистити</button>
+                </div>
               </div>
               <div>
                 <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Форма 3D-огляду:</label>
@@ -894,18 +1075,84 @@
               </div>
             </div>
 
-            <textarea id="new-desc" rows="2" required placeholder="Короткий опис" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"></textarea>
-            <input type="url" id="new-image" required placeholder="URL фото" value="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] font-mono">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Опис виробу *:</label>
+              <textarea id="new-desc" rows="2" required placeholder="Короткий опис" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs"></textarea>
+            </div>
 
-            <button type="submit" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition">
-              Опублікувати товар
-            </button>
+            <!-- Блок фото товару (URL або завантаження файлу + прев'ю) -->
+            <div class="bg-white p-2.5 rounded-xl border border-slate-200 space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <label class="block text-[10px] font-bold text-slate-700">Фото товару (URL або файл з пристрою):</label>
+                <span id="form-image-status" class="text-[9px] font-semibold text-slate-400">Стандартне URL</span>
+              </div>
+              <div class="flex items-center gap-2.5">
+                <img id="form-image-preview" src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80" alt="Прев'ю" class="w-12 h-12 rounded-lg object-cover border border-slate-200 bg-slate-100 shrink-0" onerror="this.src='https://placehold.co/120x120/1e293b/ffffff?text=3D'">
+                <div class="flex-1 space-y-1.5 min-w-0">
+                  <input type="text" id="new-image" placeholder="Вставте URL фото або завантажте файл нижче" value="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80" oninput="handleProductImageUrlInput(this.value)" class="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-mono">
+                  <div class="flex items-center gap-1.5">
+                    <input type="file" id="new-image-file" accept="image/*" onchange="handleProductImageFileChange(event)" class="w-full text-[10px] text-slate-500 file:mr-1.5 file:py-0.5 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:font-bold file:bg-slate-200 file:text-slate-700 hover:file:bg-slate-300 cursor-pointer">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Кольори пластику + швидкий вибір + рейтинг -->
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+              <div class="sm:col-span-3">
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Доступні кольори пластику (через кому):</label>
+                <input type="text" id="new-colors" placeholder="Кольори через кому (напр. Синій, Чорний, Жовтий)" value="Синій (Ліцей), Чорний матовий, Жовтий (Патріот)" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Рейтинг (1-5):</label>
+                <input type="number" id="new-rating" step="0.1" min="1" max="5" value="5.0" class="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-1 pt-0.5">
+              <span class="text-[9px] text-slate-400 font-semibold self-center mr-0.5">+ Колір:</span>
+              <button type="button" onclick="appendColorToForm('Синій (Ліцей)')" class="px-1.5 py-0.5 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 text-[9px] font-semibold border border-blue-200 transition">Синій</button>
+              <button type="button" onclick="appendColorToForm('Жовтий (Патріот)')" class="px-1.5 py-0.5 rounded bg-amber-50 hover:bg-amber-100 text-amber-700 text-[9px] font-semibold border border-amber-200 transition">Жовтий</button>
+              <button type="button" onclick="appendColorToForm('Чорний матовий')" class="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[9px] font-semibold border border-slate-300 transition">Чорний</button>
+              <button type="button" onclick="appendColorToForm('Білий мармур')" class="px-1.5 py-0.5 rounded bg-slate-50 hover:bg-slate-100 text-slate-600 text-[9px] font-semibold border border-slate-200 transition">Білий мармур</button>
+              <button type="button" onclick="appendColorToForm('Смарагдовий')" class="px-1.5 py-0.5 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[9px] font-semibold border border-emerald-200 transition">Смарагдовий</button>
+              <button type="button" onclick="appendColorToForm('Золотистий шовк')" class="px-1.5 py-0.5 rounded bg-yellow-50 hover:bg-yellow-100 text-yellow-800 text-[9px] font-semibold border border-yellow-200 transition">Золотистий</button>
+              <button type="button" onclick="appendColorToForm('Червоний рубін')" class="px-1.5 py-0.5 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 text-[9px] font-semibold border border-rose-200 transition">Червоний</button>
+              <button type="button" onclick="appendColorToForm('Сірий графіт')" class="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[9px] font-semibold border border-slate-300 transition">Графіт</button>
+            </div>
+
+            <div class="flex items-center gap-2 pt-1">
+              <button type="submit" id="product-form-submit-btn" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-1.5">
+                Опублікувати товар
+              </button>
+              <button type="button" id="cancel-edit-bottom-btn" onclick="cancelEditProduct()" class="hidden px-3.5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition">
+                Скасувати
+              </button>
+            </div>
           </form>
 
-          <!-- Список позицій -->
-          <div class="space-y-2">
-            <h4 class="text-xs font-black uppercase text-slate-800">Активні моделі</h4>
-            <div class="max-h-80 overflow-y-auto divide-y divide-slate-100 pr-1 text-xs" id="admin-products-list"></div>
+          <!-- Список позицій із пошуком та кнопками Редагувати / Дублювати / Видалити -->
+          <div class="space-y-2.5 bg-slate-50/70 p-3.5 rounded-2xl border border-slate-200">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+              <div>
+                <h4 class="text-xs font-black uppercase text-slate-800">Активні моделі в каталозі</h4>
+                <p class="text-[10px] text-slate-500">Натисніть ✏️ для редагування будь-якого товару</p>
+              </div>
+              <span id="admin-filtered-count" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700"></span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-5 gap-2">
+              <div class="sm:col-span-3 relative">
+                <input type="text" id="admin-product-search" oninput="renderAdminProductsTable()" placeholder="🔍 Пошук за назвою або автором..." class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
+              </div>
+              <div class="sm:col-span-2">
+                <select id="admin-product-cat-filter" onchange="renderAdminProductsTable()" class="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
+                  <option value="all">Усі категорії</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="max-h-[420px] overflow-y-auto divide-y divide-slate-200/70 pr-1 text-xs space-y-1.5" id="admin-products-list"></div>
           </div>
         </div>
       </div>
@@ -935,6 +1182,25 @@
       <span class="text-[10px] font-medium">Кастом</span>
     </button>
   </nav>
+
+  <!-- Модалка підтвердження дії (замість системного confirm) -->
+  <div id="confirm-action-modal" class="fixed inset-0 z-[60] bg-slate-950/75 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-xs w-full p-5 shadow-2xl space-y-3 border border-slate-200 text-center">
+      <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto font-bold text-base">
+        !
+      </div>
+      <h4 id="confirm-modal-title" class="text-sm font-heading font-black text-slate-900">Підтвердження дії</h4>
+      <p id="confirm-modal-msg" class="text-xs text-slate-600 leading-relaxed">Ви впевнені?</p>
+      <div class="flex items-center gap-2 pt-1">
+        <button type="button" onclick="closeConfirmModal()" class="flex-1 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
+          Скасувати
+        </button>
+        <button type="button" id="confirm-modal-ok-btn" onclick="executeConfirmModalAction()" class="flex-1 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm transition">
+          Підтвердити
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Спливаюче сповіщення (Toast) -->
   <div id="toast" class="fixed bottom-16 md:bottom-6 right-4 left-4 sm:left-auto sm:right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none">
@@ -1626,7 +1892,18 @@
       "Чорний матовий": 0x1e293b,
       "Білий мармур": 0xe2e8f0,
       "Золотистий шовк": 0xd97706,
-      "Смарагдовий": 0x059669
+      "Сріблястий шовк": 0x94a3b8,
+      "Смарагдовий": 0x059669,
+      "Бірюзовий": 0x06b6d4,
+      "Фіолетовий": 0x7c3aed,
+      "Червоний рубін": 0xdc2626,
+      "Небесно-блакитний": 0x38bdf8,
+      "Бежевий шовк": 0xd6d3d1,
+      "Рожевий": 0xec4899,
+      "Помаранчевий": 0xf97316,
+      "Салатовий": 0x84cc16,
+      "Коричневий": 0x78350f,
+      "Сірий графіт": 0x475569
     };
 
     function initStlViewer(containerId, initialColorName, demoShape = 'cylinder', stlUrl = null) {
@@ -1789,10 +2066,13 @@
       }
     }
 
-    function saveCategoriesToStorage() {
+    function saveCategoriesToStorage(syncCloud = true) {
       try {
         localStorage.setItem(STORAGE_KEY_CATEGORIES, JSON.stringify(categories));
       } catch (e) {}
+      if (syncCloud && db) {
+        db.ref("categories").set(categories).catch(err => console.warn("Помилка запису категорій у Firebase:", err));
+      }
     }
 
     function renderCategoryPills() {
@@ -1863,11 +2143,27 @@
 
     function updateCategorySelects() {
       const select = document.getElementById("new-category");
-      if (!select) return;
       const nonAll = categories.filter(c => !c.isAll);
-      select.innerHTML = nonAll.map(c => `
-        <option value="${c.name}">${c.label}</option>
-      `).join('');
+      if (select) {
+        const currentVal = select.value;
+        select.innerHTML = nonAll.map(c => `
+          <option value="${c.name}">${c.label}</option>
+        `).join('');
+        if (currentVal && Array.from(select.options).some(o => o.value === currentVal)) {
+          select.value = currentVal;
+        }
+      }
+      const adminFilter = document.getElementById("admin-product-cat-filter");
+      if (adminFilter) {
+        const prevFilter = adminFilter.value || "all";
+        adminFilter.innerHTML = `<option value="all">Усі категорії (${products.length})</option>` + nonAll.map(c => {
+          const cnt = products.filter(p => p.category === c.name).length;
+          return `<option value="${c.name}">${c.label} (${cnt})</option>`;
+        }).join('');
+        if (Array.from(adminFilter.options).some(o => o.value === prevFilter)) {
+          adminFilter.value = prevFilter;
+        }
+      }
     }
 
     function handleAddNewCategory() {
@@ -1898,31 +2194,203 @@
     }
 
     function deleteCategory(catName) {
-      if (!confirm(`Ви дійсно бажаєте видалити категорію «${catName}»?`)) return;
+      openConfirmModal(
+        "Видалення категорії",
+        `Ви дійсно бажаєте видалити категорію «${catName}»? Товари цієї категорії буде переміщено в «Інше».`,
+        () => {
+          const itemsInCat = products.filter(p => p.category === catName);
+          if (itemsInCat.length > 0) {
+            itemsInCat.forEach(p => { p.category = "Інше"; });
+            if (!categories.some(c => c.name === "Інше")) {
+              categories.push({ id: "Інше", name: "Інше", label: "📦 Інше", isAll: false });
+            }
+            saveProductsToStorage();
+          }
 
-      const itemsInCat = products.filter(p => p.category === catName);
-      if (itemsInCat.length > 0) {
-        itemsInCat.forEach(p => { p.category = "Інше"; });
-        if (!categories.some(c => c.name === "Інше")) {
-          categories.push({ id: "Інше", name: "Інше", label: "📦 Інше", isAll: false });
+          categories = categories.filter(c => c.name !== catName);
+          if (activeCategory === catName) activeCategory = 'all';
+
+          saveCategoriesToStorage();
+          renderCategoryPills();
+          renderAdminCategories();
+          renderProducts();
+          renderAdminProductsTable();
+          showToast(`Категорію «${catName}» видалено!`);
         }
-        saveProductsToStorage();
-      }
-
-      categories = categories.filter(c => c.name !== catName);
-      if (activeCategory === catName) activeCategory = 'all';
-
-      saveCategoriesToStorage();
-      renderCategoryPills();
-      renderAdminCategories();
-      renderProducts();
-      renderAdminProductsTable();
-      showToast(`Категорію «${catName}» видалено!`);
+      );
     }
 
     /* =========================================================
-       ІНІЦІАЛІЗАЦІЯ СТОРІНКИ
+       ІНІЦІАЛІЗАЦІЯ СТОРІНКИ ТА ХМАРНА СИНХРОНІЗАЦІЯ FIREBASE
        ========================================================= */
+    let firebaseOrders = [];
+
+    /* =========================================================
+       ІНТЕРАКТИВНА 3D-МОДЕЛЬ НА ГОЛОВНОМУ БАНЕРІ (THREE.JS)
+       ========================================================= */
+    let bannerScene, bannerCamera, bannerRenderer, bannerControls, bannerMeshGroup, bannerMaterial;
+    let currentBannerColor = 0x2563eb;
+
+    function initBanner3DViewer() {
+      const container = document.getElementById("banner-3d-container");
+      if (!container || typeof THREE === 'undefined') return;
+
+      const width = container.clientWidth || 320;
+      const height = container.clientHeight || 260;
+
+      bannerScene = new THREE.Scene();
+
+      bannerCamera = new THREE.PerspectiveCamera(42, width / height, 0.1, 1000);
+      bannerCamera.position.set(24, 22, 38);
+
+      bannerRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "low-power" });
+      bannerRenderer.setSize(width, height);
+      bannerRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+      container.innerHTML = "";
+      container.appendChild(bannerRenderer.domElement);
+
+      bannerControls = new THREE.OrbitControls(bannerCamera, bannerRenderer.domElement);
+      bannerControls.enableDamping = true;
+      bannerControls.dampingFactor = 0.06;
+      bannerControls.autoRotate = true;
+      bannerControls.autoRotateSpeed = 2.5;
+      bannerControls.enablePan = false;
+      bannerControls.minDistance = 20;
+      bannerControls.maxDistance = 65;
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+      bannerScene.add(ambientLight);
+
+      const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.95);
+      dirLight1.position.set(30, 50, 35);
+      bannerScene.add(dirLight1);
+
+      const dirLight2 = new THREE.DirectionalLight(0x60a5fa, 0.45);
+      dirLight2.position.set(-30, 20, -25);
+      bannerScene.add(dirLight2);
+
+      // Сітка столу 3D-принтера
+      const gridHelper = new THREE.GridHelper(36, 12, 0x3b82f6, 0x1e293b);
+      gridHelper.position.y = -9;
+      bannerScene.add(gridHelper);
+
+      bannerMaterial = new THREE.MeshStandardMaterial({
+        color: currentBannerColor,
+        roughness: 0.3,
+        metalness: 0.15
+      });
+
+      buildBannerShape('castle');
+
+      const ro = new ResizeObserver(() => {
+        if (!container || !bannerRenderer || !bannerCamera) return;
+        const w = container.clientWidth;
+        const h = container.clientHeight;
+        if (w > 0 && h > 0) {
+          bannerCamera.aspect = w / h;
+          bannerCamera.updateProjectionMatrix();
+          bannerRenderer.setSize(w, h);
+        }
+      });
+      ro.observe(container);
+
+      function animateBanner() {
+        requestAnimationFrame(animateBanner);
+        if (bannerControls) bannerControls.update();
+        if (bannerRenderer && bannerScene && bannerCamera) {
+          bannerRenderer.render(bannerScene, bannerCamera);
+        }
+      }
+      animateBanner();
+    }
+
+    function buildBannerShape(type) {
+      if (!bannerScene || !bannerMaterial) return;
+      if (bannerMeshGroup) {
+        bannerScene.remove(bannerMeshGroup);
+      }
+
+      bannerMeshGroup = new THREE.Group();
+      const accentMat = new THREE.MeshStandardMaterial({
+        color: 0xfacc15,
+        roughness: 0.25,
+        metalness: 0.3
+      });
+
+      if (type === 'castle') {
+        // Фортечна вежа Степанського замку / Органайзер
+        const baseGeo = new THREE.CylinderGeometry(7.5, 9, 14, 8);
+        const baseMesh = new THREE.Mesh(baseGeo, bannerMaterial);
+        baseMesh.position.y = -1.5;
+        bannerMeshGroup.add(baseMesh);
+
+        const rimGeo = new THREE.TorusGeometry(7.6, 0.7, 12, 8);
+        rimGeo.rotateX(Math.PI / 2);
+        const rimMesh = new THREE.Mesh(rimGeo, accentMat);
+        rimMesh.position.y = 5.5;
+        bannerMeshGroup.add(rimMesh);
+
+        // Зубці вежі
+        for (let i = 0; i < 8; i++) {
+          const angle = (i / 8) * Math.PI * 2;
+          const battlementGeo = new THREE.BoxGeometry(2.2, 2.6, 2.2);
+          const bMesh = new THREE.Mesh(battlementGeo, bannerMaterial);
+          bMesh.position.set(Math.cos(angle) * 6.8, 6.8, Math.sin(angle) * 6.8);
+          bMesh.rotation.y = -angle;
+          bannerMeshGroup.add(bMesh);
+        }
+      } else if (type === 'keychain') {
+        // Фірмовий брелок ліцею
+        const bodyGeo = new THREE.CylinderGeometry(10, 10, 2.8, 32);
+        const bodyMesh = new THREE.Mesh(bodyGeo, bannerMaterial);
+        bodyMesh.rotation.x = Math.PI / 5;
+        bannerMeshGroup.add(bodyMesh);
+
+        const ringGeo = new THREE.TorusGeometry(9.2, 0.7, 16, 48);
+        ringGeo.rotateX(Math.PI / 2);
+        const ringMesh = new THREE.Mesh(ringGeo, accentMat);
+        ringMesh.position.y = 1.5;
+        ringMesh.rotation.x = Math.PI / 5;
+        bannerMeshGroup.add(ringMesh);
+
+        const loopGeo = new THREE.TorusGeometry(2.6, 0.65, 16, 32);
+        loopGeo.rotateX(Math.PI / 2);
+        const loopMesh = new THREE.Mesh(loopGeo, accentMat);
+        loopMesh.position.set(0, 4.2, -9.5);
+        loopMesh.rotation.x = Math.PI / 5;
+        bannerMeshGroup.add(loopMesh);
+      } else {
+        // 3D Антистрес вузол (TorusKnot)
+        const knotGeo = new THREE.TorusKnotGeometry(6.5, 2.0, 90, 16);
+        const knotMesh = new THREE.Mesh(knotGeo, bannerMaterial);
+        knotMesh.position.y = 0.5;
+        bannerMeshGroup.add(knotMesh);
+      }
+
+      bannerScene.add(bannerMeshGroup);
+    }
+
+    function setBanner3DColor(hexValue) {
+      currentBannerColor = hexValue;
+      if (bannerMaterial) {
+        bannerMaterial.color.setHex(hexValue);
+      }
+    }
+
+    function switchBanner3DShape(shapeType, titleText) {
+      buildBannerShape(shapeType);
+      const titleEl = document.getElementById("banner-3d-title");
+      if (titleEl && titleText) titleEl.innerText = titleText;
+
+      document.querySelectorAll(".banner-shape-btn").forEach(btn => {
+        if (btn.getAttribute("onclick") && btn.getAttribute("onclick").includes(`'${shapeType}'`)) {
+          btn.className = "banner-shape-btn px-2.5 py-1 rounded-lg text-[10px] font-bold bg-blue-600 text-white border border-blue-500 transition";
+        } else {
+          btn.className = "banner-shape-btn px-2.5 py-1 rounded-lg text-[10px] font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 transition";
+        }
+      });
+    }
+
     document.addEventListener("DOMContentLoaded", () => {
       loadProductsFromStorage();
       loadCategoriesFromStorage();
@@ -1933,8 +2401,225 @@
       updateMonobankUIStatus();
       setupEventListeners();
       renderProducts();
+      initFirebaseRealtimeSync();
+      setTimeout(initBanner3DViewer, 80);
       if (window.lucide) lucide.createIcons();
     });
+
+    function initFirebaseRealtimeSync() {
+      if (!db) {
+        updateFirebaseBadge(false);
+        return;
+      }
+
+      // Відстеження з'єднання з Firebase
+      db.ref(".info/connected").on("value", (snap) => {
+        updateFirebaseBadge(snap.val() === true);
+      });
+
+      // 1. Синхронізація товарів (products) у реальному часі
+      db.ref("products").on("value", (snapshot) => {
+        const val = snapshot.val();
+        if (val) {
+          const cloudProducts = Array.isArray(val) ? val.filter(Boolean) : Object.values(val).filter(Boolean);
+          if (cloudProducts.length > 0) {
+            products = cloudProducts;
+            saveProductsToStorage(false);
+            renderProducts();
+            renderCategoryPills();
+            if (isAdminAuthenticated) renderAdminProductsTable();
+          }
+        } else {
+          // Якщо база Firebase порожня (перший запуск), ініціалізуємо її поточними товарами
+          db.ref("products").set(products).catch(err => console.warn("Помилка початкового запису товарів у Firebase:", err));
+        }
+      }, (err) => {
+        console.warn("Firebase products read error:", err);
+      });
+
+      // 2. Синхронізація категорій (categories) у реальному часі
+      db.ref("categories").on("value", (snapshot) => {
+        const val = snapshot.val();
+        if (val) {
+          const cloudCats = Array.isArray(val) ? val.filter(Boolean) : Object.values(val).filter(Boolean);
+          if (cloudCats.length > 0) {
+            categories = cloudCats;
+            saveCategoriesToStorage(false);
+            renderCategoryPills();
+            if (isAdminAuthenticated) renderAdminCategories();
+          }
+        } else {
+          db.ref("categories").set(categories).catch(() => {});
+        }
+      });
+
+      // 3. Синхронізація налаштувань (settings: Monobank та Telegram)
+      db.ref("settings").on("value", (snapshot) => {
+        const s = snapshot.val();
+        if (s) {
+          if (s.monobankJarLink) {
+            monobankJarLink = s.monobankJarLink;
+            localStorage.setItem(STORAGE_KEY_MONO_JAR, monobankJarLink);
+          }
+          if (s.monobankJarTitle) {
+            monobankJarTitle = s.monobankJarTitle;
+            localStorage.setItem(STORAGE_KEY_MONO_TITLE, monobankJarTitle);
+          }
+          if (s.telegramBotToken !== undefined) {
+            telegramBotToken = s.telegramBotToken;
+            localStorage.setItem(STORAGE_KEY_TG_TOKEN, telegramBotToken);
+          }
+          if (s.telegramChatId !== undefined) {
+            telegramChatId = s.telegramChatId;
+            localStorage.setItem(STORAGE_KEY_TG_CHAT_ID, telegramChatId);
+          }
+          if (s.telegramUsername) {
+            telegramUsername = s.telegramUsername;
+            localStorage.setItem(STORAGE_KEY_TG_USERNAME, telegramUsername);
+          }
+          updateTelegramUIStatus();
+          updateMonobankUIStatus();
+        }
+      });
+
+      // 4. Синхронізація замовлень (orders) у реальному часі
+      db.ref("orders").on("value", (snapshot) => {
+        const val = snapshot.val();
+        if (val) {
+          firebaseOrders = Object.entries(val).map(([key, item]) => ({
+            firebaseKey: key,
+            ...item
+          })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        } else {
+          firebaseOrders = [];
+        }
+        if (isAdminAuthenticated) renderAdminOrdersList();
+      });
+    }
+
+    function updateFirebaseBadge(isOnline) {
+      const badge = document.getElementById("firebase-sync-badge");
+      if (!badge) return;
+      if (isOnline) {
+        badge.className = "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-300";
+        badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Firebase Online';
+      } else {
+        badge.className = "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-300";
+        badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Локальний режим';
+      }
+    }
+
+    function syncAllToFirebase() {
+      if (!db) {
+        showToast("Помилка: Firebase не ініціалізовано");
+        return;
+      }
+      Promise.all([
+        db.ref("products").set(products),
+        db.ref("categories").set(categories),
+        db.ref("settings").set({
+          monobankJarLink,
+          monobankJarTitle,
+          telegramBotToken,
+          telegramChatId,
+          telegramUsername
+        })
+      ]).then(() => {
+        showToast("☁️ Всі товари, категорії та налаштування синхронізовано з Firebase!");
+      }).catch((err) => {
+        console.warn("Firebase sync error:", err);
+        showToast("❌ Помилка запису у Firebase (перевірте Rules)");
+      });
+    }
+
+    function renderAdminOrdersList() {
+      const countEl = document.getElementById("admin-orders-count");
+      const listEl = document.getElementById("admin-orders-list");
+      if (!listEl) return;
+
+      if (countEl) countEl.innerText = `${firebaseOrders.length} замовлень`;
+
+      if (firebaseOrders.length === 0) {
+        listEl.innerHTML = '<p class="text-slate-400 text-[11px] py-3 text-center">Замовлень у хмарній базі поки немає.</p>';
+        return;
+      }
+
+      listEl.innerHTML = firebaseOrders.map(ord => {
+        const itemsSummary = Array.isArray(ord.items) 
+          ? ord.items.map(i => `${i.title} (${i.color}, ${i.quantity} шт.)`).join(', ')
+          : '';
+        const statusColor = ord.status === 'Виконано' 
+          ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
+          : 'bg-amber-100 text-amber-800 border-amber-300';
+
+        return `
+          <div class="p-2.5 bg-white rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-xs">
+            <div class="space-y-0.5 min-w-0 flex-1">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-black text-blue-700">${ord.orderNumber || '#STL'}</span>
+                <span class="font-bold text-slate-900">${ord.fullname || 'Гість'}</span>
+                <span class="text-[10px] text-slate-500">(${ord.role || ''}${ord.userClass ? ', ' + ord.userClass : ''})</span>
+                <span class="text-[10px] font-bold px-2 py-0.2 rounded-full border ${statusColor}">${ord.status || 'Нове'}</span>
+              </div>
+              <div class="text-[11px] text-slate-600 truncate" title="${itemsSummary}">
+                🛒 ${itemsSummary}
+              </div>
+              <div class="text-[10px] text-slate-400 flex items-center gap-2 flex-wrap">
+                <span>📞 ${ord.phone || ''}</span>
+                <span>• 💰 <strong class="text-slate-700">${ord.totalText || ''}</strong> (${ord.paymentMethod === 'monobank' ? '🐱 Monobank' : '💵 Готівка'})</span>
+                <span>• 🕒 ${ord.dateFormatted || ''}</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button 
+                type="button" 
+                onclick="toggleOrderStatus('${ord.firebaseKey}', '${ord.status || 'Нове'}')" 
+                class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-emerald-100 text-slate-700 hover:text-emerald-800 font-bold text-[10px] transition"
+                title="Змінити статус"
+              >
+                ✓ Статус
+              </button>
+              <button 
+                type="button" 
+                onclick="deleteFirebaseOrder('${ord.firebaseKey}')" 
+                class="p-1 text-slate-400 hover:text-rose-600 rounded-lg transition"
+                title="Видалити замовлення"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleOrderStatus(firebaseKey, currentStatus) {
+      if (!db || !firebaseKey) return;
+      const nextStatus = currentStatus === 'Виконано' ? 'В роботі (3D-друк)' : 'Виконано';
+      db.ref(`orders/${firebaseKey}/status`).set(nextStatus).then(() => {
+        showToast(`Статус змінено на «${nextStatus}»`);
+      });
+    }
+
+    function deleteFirebaseOrder(firebaseKey) {
+      if (!db || !firebaseKey) return;
+      db.ref(`orders/${firebaseKey}`).remove().then(() => {
+        showToast("Замовлення видалено з бази");
+      });
+    }
+
+    function clearAllFirebaseOrders() {
+      if (!db) return;
+      openConfirmModal(
+        "Очищення історії замовлень",
+        "Очистити всю історію замовлень із хмарної бази Firebase?",
+        () => {
+          db.ref("orders").remove().then(() => {
+            showToast("Історію замовлень очищено");
+          });
+        }
+      );
+    }
 
     function loadProductsFromStorage() {
       try {
@@ -1952,10 +2637,13 @@
       }
     }
 
-    function saveProductsToStorage() {
+    function saveProductsToStorage(syncCloud = true) {
       try {
         localStorage.setItem(STORAGE_KEY_PRODUCTS, JSON.stringify(products));
       } catch (e) {}
+      if (syncCloud && db) {
+        db.ref("products").set(products).catch(err => console.warn("Помилка синхронізації товарів із Firebase:", err));
+      }
     }
 
     function setupEventListeners() {
@@ -2096,13 +2784,24 @@
                   ${product.badge || '3D САЛ'}
                 </span>
 
-                <button 
-                  onclick="event.stopPropagation(); toggleWishlist(${product.id})" 
-                  aria-label="В обране"
-                  class="absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-white/90 text-slate-600 flex items-center justify-center shadow" 
-                >
-                  <i data-lucide="heart" class="w-3.5 h-3.5 ${isFav ? 'text-rose-500 fill-rose-500' : ''}"></i>
-                </button>
+                <div class="absolute top-2.5 right-2.5 flex items-center gap-1.5">
+                  ${isAdminAuthenticated ? `
+                    <button 
+                      onclick="event.stopPropagation(); openAdminAndEditProduct(${product.id})" 
+                      title="Редагувати товар в адмінці"
+                      class="w-7 h-7 rounded-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold flex items-center justify-center shadow transition"
+                    >
+                      <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                    </button>
+                  ` : ''}
+                  <button 
+                    onclick="event.stopPropagation(); toggleWishlist(${product.id})" 
+                    aria-label="В обране"
+                    class="w-7 h-7 rounded-full bg-white/90 text-slate-600 flex items-center justify-center shadow" 
+                  >
+                    <i data-lucide="heart" class="w-3.5 h-3.5 ${isFav ? 'text-rose-500 fill-rose-500' : ''}"></i>
+                  </button>
+                </div>
               </div>
 
               <div class="p-3 sm:p-4">
@@ -2207,12 +2906,21 @@
             </div>
           </div>
 
-          <div class="pt-1">
-            <div class="text-xl font-black text-slate-900 mb-2">${product.price} ₴</div>
+          <div class="pt-1 space-y-2">
+            <div class="flex items-baseline gap-2">
+              <div class="text-xl font-black text-slate-900">${product.price} ₴</div>
+              ${product.oldPrice ? `<div class="text-xs text-slate-400 line-through">${product.oldPrice} ₴</div>` : ''}
+            </div>
             <button onclick="addFromModal(${product.id})" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5 transition active:scale-95">
               <i data-lucide="printer" class="w-4 h-4"></i>
               <span>Замовити 3D-друк</span>
             </button>
+            ${isAdminAuthenticated ? `
+              <button type="button" onclick="openAdminAndEditProduct(${product.id})" class="w-full py-2 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition">
+                <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                <span>Редагувати цей товар в адмінці</span>
+              </button>
+            ` : ''}
           </div>
         </div>
       `;
@@ -2627,6 +3335,14 @@
       localStorage.setItem(STORAGE_KEY_TG_CHAT_ID, chatId);
       localStorage.setItem(STORAGE_KEY_TG_USERNAME, telegramUsername);
 
+      if (db) {
+        db.ref("settings").update({
+          telegramBotToken: token,
+          telegramChatId: chatId,
+          telegramUsername: telegramUsername
+        }).catch(() => {});
+      }
+
       updateTelegramUIStatus();
       showToast("Налаштування Telegram збережено!");
     }
@@ -2698,6 +3414,12 @@
       monobankJarTitle = title || "Банка STEM-хабу на пластик та ЗСУ 🇺🇦";
       localStorage.setItem(STORAGE_KEY_MONO_JAR, monobankJarLink);
       localStorage.setItem(STORAGE_KEY_MONO_TITLE, monobankJarTitle);
+      if (db) {
+        db.ref("settings").update({
+          monobankJarLink: monobankJarLink,
+          monobankJarTitle: monobankJarTitle
+        }).catch(() => {});
+      }
       updateMonobankUIStatus();
       showToast("Банку Monobank збережено!");
     }
@@ -2822,6 +3544,41 @@
         totalText: totalText,
         monoUrl: monoPaymentUrl
       };
+
+      // Збереження замовлення у Firebase Realtime Database (db.ref("orders"))
+      if (db) {
+        try {
+          const orderPayload = {
+            orderNumber: orderNumber,
+            fullname: fullname,
+            role: role,
+            userClass: userClass || "",
+            phone: phone,
+            deliveryMethod: deliveryMethod,
+            deliveryLabel: deliveryLabel,
+            paymentMethod: paymentMethod,
+            totalText: totalText,
+            fixedTotal: fixedTotal,
+            hasNegotiable: hasNegotiable,
+            status: "Нове",
+            createdAt: Date.now(),
+            dateFormatted: new Date().toLocaleString('uk-UA'),
+            items: cart.map(item => ({
+              id: item.id,
+              title: item.title,
+              price: item.price,
+              color: item.color,
+              quantity: item.quantity,
+              customNote: item.customNote || "",
+              attachedFileName: item.attachedFileName || "",
+              isNegotiable: !!item.isNegotiable
+            }))
+          };
+          await db.ref("orders").push(orderPayload);
+        } catch (fbErr) {
+          console.warn("Помилка запису замовлення у Firebase:", fbErr);
+        }
+      }
 
       let sentViaBot = false;
       const filesToSend = cart.filter(i => i.fileObj).map(i => i.fileObj);
@@ -2982,6 +3739,8 @@
     function openAdminAccessModal() {
       if (isAdminAuthenticated) {
         renderAdminProductsTable();
+        renderAdminCategories();
+        renderAdminOrdersList();
         updateTelegramUIStatus();
         updateMonobankUIStatus();
         const m = document.getElementById("admin-panel-modal");
@@ -2997,6 +3756,39 @@
       if (m) m.classList.add("hidden");
     }
 
+    // Стан редагування товару та модалки підтвердження
+    let editingProductId = null;
+    let editingOriginalImage = "";
+    let pendingUploadedImage = null;
+    let editingRemoveStl = false;
+    let pendingConfirmCallback = null;
+
+    function openConfirmModal(title, message, onConfirm) {
+      const modal = document.getElementById("confirm-action-modal");
+      const titleEl = document.getElementById("confirm-modal-title");
+      const msgEl = document.getElementById("confirm-modal-msg");
+      if (!modal) {
+        if (onConfirm) onConfirm();
+        return;
+      }
+      if (titleEl) titleEl.innerText = title || "Підтвердження дії";
+      if (msgEl) msgEl.innerText = message || "Ви впевнені?";
+      pendingConfirmCallback = onConfirm;
+      modal.classList.remove("hidden");
+    }
+
+    function closeConfirmModal() {
+      const modal = document.getElementById("confirm-action-modal");
+      if (modal) modal.classList.add("hidden");
+      pendingConfirmCallback = null;
+    }
+
+    function executeConfirmModalAction() {
+      const cb = pendingConfirmCallback;
+      closeConfirmModal();
+      if (typeof cb === "function") cb();
+    }
+
     async function handleAdminLogin(e) {
       e.preventDefault();
       const pass = document.getElementById("admin-password-input").value.trim();
@@ -3006,6 +3798,7 @@
         sessionStorage.setItem(STORAGE_KEY_AUTH, "true");
         document.getElementById("admin-password-input").value = "";
         closeAdminAuthModal();
+        renderProducts();
         openAdminAccessModal();
         showToast("Авторизовано!");
       } else {
@@ -3016,7 +3809,9 @@
     function logoutAdmin() {
       isAdminAuthenticated = false;
       sessionStorage.removeItem(STORAGE_KEY_AUTH);
+      cancelEditProduct();
       closeAdminPanel();
+      renderProducts();
       showToast("Ви вийшли з адмінки");
     }
 
@@ -3025,22 +3820,349 @@
       if (m) m.classList.add("hidden");
     }
 
+    function openAdminAndEditProduct(productId) {
+      closeQuickView();
+      openAdminAccessModal();
+      if (isAdminAuthenticated) {
+        startEditProduct(productId);
+      }
+    }
+
+    function handleProductImageUrlInput(urlVal) {
+      const trimmed = (urlVal || "").trim();
+      const preview = document.getElementById("form-image-preview");
+      const status = document.getElementById("form-image-status");
+      if (trimmed) {
+        pendingUploadedImage = null;
+        const fileInput = document.getElementById("new-image-file");
+        if (fileInput) fileInput.value = "";
+        if (preview) preview.src = trimmed;
+        if (status) status.innerText = "Вказано URL фото";
+      } else if (editingProductId !== null && editingOriginalImage) {
+        if (preview) preview.src = editingOriginalImage;
+        if (status) status.innerText = editingOriginalImage.startsWith("data:") ? "Вбудоване фото (Base64)" : "Поточне фото збережено";
+      }
+    }
+
+    function handleProductImageFileChange(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        pendingUploadedImage = evt.target.result;
+        const preview = document.getElementById("form-image-preview");
+        const status = document.getElementById("form-image-status");
+        const urlInput = document.getElementById("new-image");
+        if (preview) preview.src = pendingUploadedImage;
+        if (status) status.innerText = `Завантажено: ${file.name}`;
+        if (urlInput) urlInput.value = "";
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function appendColorToForm(colorName) {
+      const input = document.getElementById("new-colors");
+      if (!input) return;
+      const current = input.value
+        .split(",")
+        .map(c => c.trim())
+        .filter(Boolean);
+      if (current.includes(colorName)) {
+        // Якщо колір вже є — видаляємо його (зручний перемикач)
+        const next = current.filter(c => c !== colorName);
+        input.value = next.join(", ");
+      } else {
+        current.push(colorName);
+        input.value = current.join(", ");
+      }
+    }
+
+    function clearEditingProductStl() {
+      editingRemoveStl = true;
+      const stlInput = document.getElementById("new-stl-file");
+      if (stlInput) stlInput.value = "";
+      const bar = document.getElementById("edit-stl-status-bar");
+      const txt = document.getElementById("edit-stl-status-text");
+      if (bar && txt) {
+        bar.className = "mt-1 flex items-center justify-between gap-1 bg-rose-50 border border-rose-200 rounded-md px-2 py-0.5 text-[10px] text-rose-700";
+        txt.innerText = "🗑️ .STL буде видалено при збереженні";
+      }
+    }
+
+    function startEditProduct(id) {
+      const prod = products.find(p => p.id === id);
+      if (!prod) return;
+
+      editingProductId = prod.id;
+      editingOriginalImage = prod.image || "";
+      pendingUploadedImage = null;
+      editingRemoveStl = false;
+
+      const hiddenId = document.getElementById("editing-product-id");
+      if (hiddenId) hiddenId.value = String(prod.id);
+
+      const titleInput = document.getElementById("new-title");
+      if (titleInput) titleInput.value = prod.title || "";
+
+      const catSelect = document.getElementById("new-category");
+      if (catSelect) {
+        updateCategorySelects();
+        if (prod.category && !Array.from(catSelect.options).some(o => o.value === prod.category)) {
+          const opt = document.createElement("option");
+          opt.value = prod.category;
+          opt.textContent = prod.category;
+          catSelect.appendChild(opt);
+        }
+        catSelect.value = prod.category || (catSelect.options[0] ? catSelect.options[0].value : "");
+      }
+
+      const priceInput = document.getElementById("new-price");
+      if (priceInput) priceInput.value = prod.price || 0;
+
+      const oldPriceInput = document.getElementById("new-old-price");
+      if (oldPriceInput) oldPriceInput.value = prod.oldPrice ? prod.oldPrice : "";
+
+      const authorInput = document.getElementById("new-author");
+      if (authorInput) authorInput.value = prod.author || "";
+
+      const badgeInput = document.getElementById("new-badge");
+      if (badgeInput) badgeInput.value = prod.badge || "";
+
+      const badgeColorSelect = document.getElementById("new-badge-color");
+      if (badgeColorSelect) {
+        const bc = prod.badgeColor || "bg-blue-600 text-white";
+        if (!Array.from(badgeColorSelect.options).some(o => o.value === bc)) {
+          const opt = document.createElement("option");
+          opt.value = bc;
+          opt.textContent = `Поточний (${bc})`;
+          badgeColorSelect.appendChild(opt);
+        }
+        badgeColorSelect.value = bc;
+      }
+
+      const shapeSelect = document.getElementById("new-demo-shape");
+      if (shapeSelect) shapeSelect.value = prod.demoShape || "cylinder";
+
+      const descInput = document.getElementById("new-desc");
+      if (descInput) descInput.value = prod.description || "";
+
+      const colorsInput = document.getElementById("new-colors");
+      if (colorsInput) {
+        colorsInput.value = Array.isArray(prod.colors) ? prod.colors.join(", ") : "Синій (Ліцей), Чорний матовий, Жовтий (Патріот)";
+      }
+
+      const ratingInput = document.getElementById("new-rating");
+      if (ratingInput) ratingInput.value = prod.rating || 5.0;
+
+      // Налаштування фото (не вставляємо величезний Base64 рядок у текстове поле, щоб не навантажувати DOM)
+      const imgInput = document.getElementById("new-image");
+      const imgFileInput = document.getElementById("new-image-file");
+      const imgPreview = document.getElementById("form-image-preview");
+      const imgStatus = document.getElementById("form-image-status");
+      if (imgFileInput) imgFileInput.value = "";
+      if (imgPreview) imgPreview.src = prod.image || "https://placehold.co/120x120/1e293b/ffffff?text=3D";
+
+      if (prod.image && prod.image.startsWith("data:")) {
+        if (imgInput) {
+          imgInput.value = "";
+          imgInput.placeholder = "Вбудоване фото збережено (або вставте новий URL)";
+        }
+        if (imgStatus) imgStatus.innerText = "Вбудоване фото (Base64)";
+      } else {
+        if (imgInput) {
+          imgInput.value = prod.image || "";
+          imgInput.placeholder = "Вставте URL фото або завантажте файл нижче";
+        }
+        if (imgStatus) imgStatus.innerText = "Поточний URL фото";
+      }
+
+      // Налаштування .STL статусу
+      const stlInput = document.getElementById("new-stl-file");
+      if (stlInput) stlInput.value = "";
+      const stlBar = document.getElementById("edit-stl-status-bar");
+      const stlText = document.getElementById("edit-stl-status-text");
+      if (stlBar && stlText) {
+        if (prod.stlUrl) {
+          stlBar.className = "mt-1 flex items-center justify-between gap-1 bg-blue-50 border border-blue-200 rounded-md px-2 py-0.5 text-[10px] text-blue-800";
+          stlText.innerText = "✅ 3D-модель (.STL) прикріплена";
+          stlBar.classList.remove("hidden");
+        } else {
+          stlBar.classList.add("hidden");
+        }
+      }
+
+      // Візуальне перемикання форми у режим редагування
+      const form = document.getElementById("add-product-form");
+      const formTitle = document.getElementById("product-form-title");
+      const modeBadge = document.getElementById("product-form-mode-badge");
+      const cancelBtn = document.getElementById("cancel-edit-btn");
+      const cancelBottomBtn = document.getElementById("cancel-edit-bottom-btn");
+      const submitBtn = document.getElementById("product-form-submit-btn");
+
+      if (form) {
+        form.classList.remove("bg-slate-50", "border-slate-200");
+        form.classList.add("bg-amber-50/70", "border-amber-400", "ring-2", "ring-amber-300/60");
+      }
+      if (formTitle) formTitle.innerText = `Редагування: ${prod.title}`;
+      if (modeBadge) modeBadge.classList.remove("hidden");
+      if (cancelBtn) cancelBtn.classList.remove("hidden");
+      if (cancelBottomBtn) cancelBottomBtn.classList.remove("hidden");
+      if (submitBtn) {
+        submitBtn.className = "flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5";
+        submitBtn.innerHTML = "💾 Зберегти зміни";
+      }
+
+      renderAdminProductsTable();
+      if (form) {
+        form.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    }
+
+    function cancelEditProduct() {
+      editingProductId = null;
+      editingOriginalImage = "";
+      pendingUploadedImage = null;
+      editingRemoveStl = false;
+
+      const form = document.getElementById("add-product-form");
+      if (form) {
+        form.reset();
+        form.classList.add("bg-slate-50", "border-slate-200");
+        form.classList.remove("bg-amber-50/70", "border-amber-400", "ring-2", "ring-amber-300/60");
+      }
+
+      const hiddenId = document.getElementById("editing-product-id");
+      if (hiddenId) hiddenId.value = "";
+
+      const defaultImg = "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80";
+      const imgInput = document.getElementById("new-image");
+      const imgPreview = document.getElementById("form-image-preview");
+      const imgStatus = document.getElementById("form-image-status");
+      if (imgInput) {
+        imgInput.value = defaultImg;
+        imgInput.placeholder = "Вставте URL фото або завантажте файл нижче";
+      }
+      if (imgPreview) imgPreview.src = defaultImg;
+      if (imgStatus) imgStatus.innerText = "Стандартне URL";
+
+      const colorsInput = document.getElementById("new-colors");
+      if (colorsInput) colorsInput.value = "Синій (Ліцей), Чорний матовий, Жовтий (Патріот)";
+
+      const ratingInput = document.getElementById("new-rating");
+      if (ratingInput) ratingInput.value = "5.0";
+
+      const stlBar = document.getElementById("edit-stl-status-bar");
+      if (stlBar) stlBar.classList.add("hidden");
+
+      const formTitle = document.getElementById("product-form-title");
+      const modeBadge = document.getElementById("product-form-mode-badge");
+      const cancelBtn = document.getElementById("cancel-edit-btn");
+      const cancelBottomBtn = document.getElementById("cancel-edit-bottom-btn");
+      const submitBtn = document.getElementById("product-form-submit-btn");
+
+      if (formTitle) formTitle.innerText = "Додати товар до каталогу";
+      if (modeBadge) modeBadge.classList.add("hidden");
+      if (cancelBtn) cancelBtn.classList.add("hidden");
+      if (cancelBottomBtn) cancelBottomBtn.classList.add("hidden");
+      if (submitBtn) {
+        submitBtn.className = "flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-1.5";
+        submitBtn.innerHTML = "Опублікувати товар";
+      }
+
+      renderAdminProductsTable();
+    }
+
+    function duplicateProduct(id) {
+      const orig = products.find(p => p.id === id);
+      if (!orig) return;
+      const copy = {
+        ...orig,
+        id: Date.now(),
+        title: `${orig.title} (Копія)`,
+        colors: Array.isArray(orig.colors) ? [...orig.colors] : ["Синій (Ліцей)"]
+      };
+      products.unshift(copy);
+      saveProductsToStorage();
+      renderProducts();
+      renderCategoryPills();
+      renderAdminProductsTable();
+      startEditProduct(copy.id);
+      showToast("Товар дубльовано — відредагуйте параметри!");
+    }
+
     function renderAdminProductsTable() {
       const totalBadge = document.getElementById("admin-total-badge");
-      if (totalBadge) totalBadge.innerText = `${products.length} товарів`;
+      if (totalBadge) totalBadge.innerText = `${products.length} товарів у базі`;
+
+      updateCategorySelects();
+
+      const searchEl = document.getElementById("admin-product-search");
+      const catFilterEl = document.getElementById("admin-product-cat-filter");
+      const filteredCountEl = document.getElementById("admin-filtered-count");
+
+      const q = searchEl ? searchEl.value.toLowerCase().trim() : "";
+      const catF = catFilterEl ? catFilterEl.value : "all";
+
+      const filteredList = products.filter(prod => {
+        const matchCat = catF === "all" || prod.category === catF;
+        const matchQ = !q ||
+          (prod.title && prod.title.toLowerCase().includes(q)) ||
+          (prod.author && prod.author.toLowerCase().includes(q)) ||
+          (prod.category && prod.category.toLowerCase().includes(q)) ||
+          String(prod.id).includes(q);
+        return matchCat && matchQ;
+      });
+
+      if (filteredCountEl) {
+        filteredCountEl.innerText = `${filteredList.length} із ${products.length}`;
+      }
       
       const listEl = document.getElementById("admin-products-list");
       if (listEl) {
-        listEl.innerHTML = products.map((prod) => `
-          <div class="py-2 flex items-center justify-between gap-2">
-            <div class="truncate flex items-center gap-1.5">
-              <span class="font-medium">${prod.title} (${prod.price} ₴)</span>
-              ${prod.author ? `<span class="text-[9px] bg-slate-100 text-slate-600 px-1 py-0.2 rounded font-medium">👤 ${prod.author}</span>` : ''}
-              ${prod.stlUrl ? '<span class="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded font-black">3D STL</span>' : '<span class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.2 rounded">Фото</span>'}
+        if (filteredList.length === 0) {
+          listEl.innerHTML = `<p class="text-slate-400 text-[11px] py-4 text-center">Товарів за цим запитом не знайдено.</p>`;
+          return;
+        }
+
+        listEl.innerHTML = filteredList.map((prod) => {
+          const isEditing = editingProductId === prod.id;
+          const rowClass = isEditing
+            ? "p-2 rounded-xl bg-amber-50 border border-amber-300 ring-1 ring-amber-300 flex items-center justify-between gap-2 transition"
+            : "p-2 rounded-xl bg-white hover:bg-slate-100/80 border border-slate-200/80 flex items-center justify-between gap-2 transition";
+
+          return `
+            <div class="${rowClass}">
+              <div class="flex items-center gap-2 min-w-0 flex-1 cursor-pointer" onclick="startEditProduct(${prod.id})" title="Натисніть для редагування">
+                <img src="${prod.image}" alt="${prod.title}" class="w-9 h-9 rounded-lg object-cover border border-slate-200 bg-slate-100 shrink-0" onerror="this.src='https://placehold.co/80x80/1e293b/ffffff?text=3D'">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="font-bold text-slate-800 truncate">${prod.title}</span>
+                    ${isEditing ? '<span class="text-[9px] bg-amber-500 text-white px-1.5 py-0.2 rounded font-black uppercase">Редагується</span>' : ''}
+                  </div>
+                  <div class="flex items-center gap-1.5 flex-wrap mt-0.5 text-[10px]">
+                    <span class="font-black text-blue-700">${prod.price} ₴</span>
+                    ${prod.oldPrice ? `<span class="text-slate-400 line-through">${prod.oldPrice} ₴</span>` : ''}
+                    <span class="text-slate-400">•</span>
+                    <span class="text-slate-500 truncate">${prod.category}</span>
+                    ${prod.author ? `<span class="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded font-medium">👤 ${prod.author}</span>` : ''}
+                    ${prod.stlUrl ? '<span class="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded font-black">3D STL</span>' : ''}
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-1 shrink-0">
+                <button type="button" onclick="startEditProduct(${prod.id})" class="px-2 py-1 rounded-lg ${isEditing ? 'bg-amber-500 text-slate-950' : 'bg-blue-50 hover:bg-blue-100 text-blue-700'} font-bold text-[10px] transition flex items-center gap-1" title="Редагувати товар">
+                  ✏️ <span class="hidden sm:inline">Редагувати</span>
+                </button>
+                <button type="button" onclick="duplicateProduct(${prod.id})" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-[10px] transition" title="Дублювати товар">
+                  📋
+                </button>
+                <button type="button" onclick="deleteProduct(${prod.id})" class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-[10px] transition" title="Видалити товар">
+                  ✕
+                </button>
+              </div>
             </div>
-            <button onclick="deleteProduct(${prod.id})" class="text-rose-500 hover:text-rose-700 font-bold p-1">✕</button>
-          </div>
-        `).join('');
+          `;
+        }).join('');
       }
     }
 
@@ -3058,41 +4180,131 @@
         });
       }
 
-      const author = (document.getElementById("new-author") && document.getElementById("new-author").value.trim()) || "STEM САЛ";
+      const titleVal = document.getElementById("new-title").value.trim();
+      const categoryVal = document.getElementById("new-category").value;
+      const priceVal = Number(document.getElementById("new-price").value);
+      const oldPriceRaw = document.getElementById("new-old-price") ? document.getElementById("new-old-price").value.trim() : "";
+      const oldPriceVal = oldPriceRaw && Number(oldPriceRaw) > 0 ? Number(oldPriceRaw) : null;
+      const authorVal = (document.getElementById("new-author") && document.getElementById("new-author").value.trim()) || "STEM САЛ";
+      const badgeVal = document.getElementById("new-badge").value.trim() || "САЛ";
+      const badgeColorVal = (document.getElementById("new-badge-color") && document.getElementById("new-badge-color").value) || "bg-blue-600 text-white";
+      const demoShapeVal = (document.getElementById("new-demo-shape") && document.getElementById("new-demo-shape").value) || "box";
+      const descVal = document.getElementById("new-desc").value.trim();
+      const ratingRaw = document.getElementById("new-rating") ? Number(document.getElementById("new-rating").value) : 5.0;
+      const ratingVal = (!isNaN(ratingRaw) && ratingRaw >= 1 && ratingRaw <= 5) ? ratingRaw : 5.0;
 
+      const colorsVal = (document.getElementById("new-colors") && document.getElementById("new-colors").value.trim())
+        ? document.getElementById("new-colors").value.split(',').map(c => c.trim()).filter(Boolean)
+        : ["Синій (Ліцей)", "Чорний матовий", "Жовтий (Патріот)"];
+
+      const urlInputVal = document.getElementById("new-image") ? document.getElementById("new-image").value.trim() : "";
+      const defaultFallbackImg = "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80";
+
+      if (editingProductId !== null) {
+        // РЕЖИМ РЕДАГУВАННЯ ІСНУЮЧОГО ТОВАРУ
+        const idx = products.findIndex(p => p.id === editingProductId);
+        if (idx > -1) {
+          const existing = products[idx];
+          const finalImage = pendingUploadedImage || urlInputVal || existing.image || defaultFallbackImg;
+          let finalStlUrl = existing.stlUrl || null;
+          if (stlDataUrl) {
+            finalStlUrl = stlDataUrl;
+          } else if (editingRemoveStl) {
+            finalStlUrl = null;
+          }
+
+          const updatedProduct = {
+            ...existing,
+            title: titleVal,
+            category: categoryVal,
+            author: authorVal,
+            price: priceVal,
+            oldPrice: oldPriceVal,
+            badge: badgeVal,
+            badgeColor: badgeColorVal,
+            rating: ratingVal,
+            colors: colorsVal,
+            image: finalImage,
+            demoShape: demoShapeVal,
+            stlUrl: finalStlUrl,
+            description: descVal
+          };
+
+          products[idx] = updatedProduct;
+
+          // Оновлюємо також дані в кошику, якщо цей товар там є
+          let cartChanged = false;
+          cart.forEach(item => {
+            if (item.id === updatedProduct.id) {
+              item.title = updatedProduct.title;
+              item.price = updatedProduct.price;
+              item.image = updatedProduct.image;
+              cartChanged = true;
+            }
+          });
+          if (cartChanged) {
+            saveCartToStorage();
+            updateCartUI();
+          }
+
+          saveProductsToStorage();
+          renderProducts();
+          renderCategoryPills();
+          renderAdminCategories();
+          cancelEditProduct();
+          showToast(`✅ Товар «${updatedProduct.title}» успішно оновлено!`);
+          return;
+        }
+      }
+
+      // РЕЖИМ ДОДАВАННЯ НОВОГО ТОВАРУ
+      const finalNewImage = pendingUploadedImage || urlInputVal || defaultFallbackImg;
       const newProduct = {
         id: Date.now(),
-        title: document.getElementById("new-title").value.trim(),
-        category: document.getElementById("new-category").value,
-        author: author,
-        price: Number(document.getElementById("new-price").value),
-        badge: document.getElementById("new-badge").value.trim() || "САЛ",
-        badgeColor: "bg-blue-600 text-white",
-        rating: 5.0,
+        title: titleVal,
+        category: categoryVal,
+        author: authorVal,
+        price: priceVal,
+        oldPrice: oldPriceVal,
+        badge: badgeVal,
+        badgeColor: badgeColorVal,
+        rating: ratingVal,
         reviewsCount: 1,
-        colors: ["Синій (Ліцей)", "Чорний матовий", "Жовтий (Патріот)"],
-        image: document.getElementById("new-image").value.trim(),
-        demoShape: (document.getElementById("new-demo-shape") && document.getElementById("new-demo-shape").value) || "box",
+        colors: colorsVal,
+        image: finalNewImage,
+        demoShape: demoShapeVal,
         stlUrl: stlDataUrl || null,
-        description: document.getElementById("new-desc").value.trim()
+        description: descVal
       };
 
       products.unshift(newProduct);
       saveProductsToStorage();
       renderProducts();
       renderCategoryPills();
-      renderAdminProductsTable();
+      renderAdminCategories();
+      cancelEditProduct();
       showToast("Товар і 3D-модель успішно додано!");
-      document.getElementById("add-product-form").reset();
     }
 
     function deleteProduct(id) {
-      products = products.filter(p => p.id !== id);
-      saveProductsToStorage();
-      renderProducts();
-      renderCategoryPills();
-      renderAdminProductsTable();
-      showToast("Товар видалено");
+      const prod = products.find(p => p.id === id);
+      const prodName = prod ? prod.title : `#${id}`;
+      openConfirmModal(
+        "Видалення товару",
+        `Ви дійсно бажаєте видалити товар «${prodName}» з каталогу?`,
+        () => {
+          if (editingProductId === id) {
+            cancelEditProduct();
+          }
+          products = products.filter(p => p.id !== id);
+          saveProductsToStorage();
+          renderProducts();
+          renderCategoryPills();
+          renderAdminCategories();
+          renderAdminProductsTable();
+          showToast("Товар видалено");
+        }
+      );
     }
 
     function exportProductsJSON() {
