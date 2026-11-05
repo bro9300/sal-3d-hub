@@ -1884,6 +1884,7 @@
     let stlScene, stlCamera, stlRenderer, stlControls, stlAnimId;
     let currentStlMesh = null;
     let resizeObserver = null;
+    let stlViewerToken = 0; // захист від «запізнілих» завантажень STL після закриття/перемикання вікна
 
     const FILAMENT_HEX = {
       "Синій (Ліцей)": 0x2563eb,
@@ -1965,24 +1966,49 @@
         stlScene.add(currentStlMesh);
       }
 
-      if (stlUrl && typeof THREE.STLLoader !== 'undefined') {
-        const loader = new THREE.STLLoader();
-        loader.load(stlUrl, function (geometry) {
-          geometry.center();
-          geometry.computeVertexNormals();
-          geometry.computeBoundingBox();
-          const box = geometry.boundingBox;
-          const maxDim = Math.max(box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z);
-          const scale = 26 / (maxDim || 1);
+      const viewerToken = ++stlViewerToken;
 
-          if (currentStlMesh) stlScene.remove(currentStlMesh);
-          currentStlMesh = new THREE.Mesh(geometry, material);
-          currentStlMesh.scale.set(scale, scale, scale);
-          currentStlMesh.position.y = 0;
-          stlScene.add(currentStlMesh);
-        }, undefined, function (err) {
-          console.warn("Помилка STL файлу, показано базову форму:", err);
-          createDefaultShape();
+      function applyStlGeometry(geometry) {
+        if (viewerToken !== stlViewerToken || !stlScene) return; // вікно вже закрито або відкрито інший товар
+        geometry.center();
+        geometry.computeVertexNormals();
+        geometry.computeBoundingBox();
+        const box = geometry.boundingBox;
+        const maxDim = Math.max(box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z);
+        const scale = 26 / (maxDim || 1);
+
+        if (currentStlMesh) stlScene.remove(currentStlMesh);
+        currentStlMesh = new THREE.Mesh(geometry, material);
+        currentStlMesh.scale.set(scale, scale, scale);
+        currentStlMesh.position.y = 0;
+        stlScene.add(currentStlMesh);
+      }
+
+      function stlFallback(message, err) {
+        if (viewerToken !== stlViewerToken || !stlScene) return;
+        console.warn("Помилка STL файлу, показано базову форму:", err);
+        if (!currentStlMesh) createDefaultShape();
+        if (message && typeof showToast === "function") showToast(message);
+      }
+
+      if (stlUrl && typeof THREE.STLLoader !== 'undefined') {
+        createDefaultShape(); // одразу показуємо заготовку, поки модель завантажується
+        const loader = new THREE.STLLoader();
+        resolveStlSource(stlUrl).then(src => {
+          if (viewerToken !== stlViewerToken) return;
+          if (src.startsWith("data:")) {
+            try {
+              applyStlGeometry(loader.parse(dataUrlToArrayBuffer(src)));
+            } catch (parseErr) {
+              stlFallback("⚠️ Не вдалося прочитати .STL файл", parseErr);
+            }
+          } else {
+            loader.load(src, applyStlGeometry, undefined, (err) => {
+              stlFallback("⚠️ Файл 3D-моделі не знайдено на сервері", err);
+            });
+          }
+        }).catch(err => {
+          stlFallback("⚠️ 3D-модель ще не синхронізована з хмарою", err);
         });
       } else {
         createDefaultShape();
@@ -2015,6 +2041,7 @@
     }
 
     function disposeStlViewer() {
+      stlViewerToken++;
       if (stlAnimId) cancelAnimationFrame(stlAnimId);
       if (stlControls) stlControls.dispose();
       if (resizeObserver) {
@@ -2529,6 +2556,7 @@
       setupEventListeners();
       renderProducts();
       initFirebaseRealtimeSync();
+      restorePendingStls();
       setTimeout(initBanner3DViewer, 80);
       scheduleIconRefresh();
     });
@@ -2564,7 +2592,7 @@
         const useDefaultMarker = DEFAULT_IMAGE_MAP[pid] && isDefaultProductImage(pid, p.image);
         const cloudImg = useDefaultMarker ? `__DEFAULT_IMG__:${pid}` : (p.image || "");
         // STL зберігається повністю в Firebase разом із записом товару
-        const stlVal = p.stlUrl || null; // Передаємо STL повністю, не відкидаємо великі моделі
+        const stlVal = normalizeStlUrl(pid, p.stlUrl); // у каталозі лише легкий маркер; сам STL лежить окремо в stl/<id>
         return {
           id: pid,
           title: String(p.title || "3D Виріб"),
@@ -2603,39 +2631,231 @@
           reviewsCount: Number(p.reviewsCount) || 1,
           colors: Array.isArray(p.colors) && p.colors.length > 0 ? p.colors : ["Синій (Ліцей)"],
           image: hydratedImg || DEFAULT_IMAGE_MAP[pid] || "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80",
-          stlUrl: p.stlUrl || null
+          stlUrl: normalizeStlUrl(pid || p.id, p.stlUrl)
         };
       });
     }
 
-    // Гібридний запис у Firebase: одночасно через швидкий HTTPS REST API та WebSocket SDK із таймаутом
-    async function firebaseFastWrite(path, payload) {
+    /* =========================================================
+       3D-МОДЕЛІ (.STL): окреме сховище, щоб каталог лишався легким
+       ---------------------------------------------------------
+       products[].stlUrl може бути:
+         • null
+         • "models/xxx.stl" або http(s)-URL — файл лежить у репозиторії GitHub Pages
+         • "__CLOUD_STL__:<id>:<версія>"  — файл завантажено через адмінку,
+           його вміст лежить у Firebase за шляхом stl/<id>/data
+       Каталог (products) тепер ніколи не містить base64 від STL,
+       тому він швидко пишеться/читається і не переповнює localStorage.
+       ========================================================= */
+    const STL_CLOUD_PREFIX = "__CLOUD_STL__:";
+    const STL_DB_NAME = "sal_stl_cache";
+    const STL_STORE = "stl";
+    const stlMemCache = new Map();      // pid -> { data, ver }
+    const pendingStlIds = new Set();    // STL, які збережені локально, але ще не вивантажені в хмару
+    let stlMigratedCount = 0;
+
+    function isInlineStl(u) { return typeof u === "string" && u.startsWith("data:"); }
+    function isCloudStl(u) { return typeof u === "string" && u.startsWith(STL_CLOUD_PREFIX); }
+    function parseCloudStl(u) {
+      const parts = String(u).slice(STL_CLOUD_PREFIX.length).split(":");
+      return { pid: Number(parts[0]), ver: parts[1] ? Number(parts[1]) : 0 };
+    }
+
+    function dataUrlToArrayBuffer(dataUrl) {
+      const bin = atob(dataUrl.slice(dataUrl.indexOf(",") + 1));
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return bytes.buffer;
+    }
+
+    // --- локальний кеш у IndexedDB (не впирається в 5 МБ localStorage) ---
+    function stlDbOpen() {
+      return new Promise((resolve, reject) => {
+        if (!window.indexedDB) return reject(new Error("IndexedDB недоступний"));
+        const req = indexedDB.open(STL_DB_NAME, 1);
+        req.onupgradeneeded = () => req.result.createObjectStore(STL_STORE);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    async function stlDbGet(pid) {
+      try {
+        const db = await stlDbOpen();
+        return await new Promise(res => {
+          const q = db.transaction(STL_STORE).objectStore(STL_STORE).get(pid);
+          q.onsuccess = () => res(q.result || null);
+          q.onerror = () => res(null);
+        });
+      } catch (e) { return null; }
+    }
+    async function stlDbPut(pid, value) {
+      try {
+        const db = await stlDbOpen();
+        await new Promise(res => {
+          const tx = db.transaction(STL_STORE, "readwrite");
+          tx.objectStore(STL_STORE).put(value, pid);
+          tx.oncomplete = () => res();
+          tx.onerror = () => res();
+          tx.onabort = () => res();
+        });
+      } catch (e) { /* кеш — не критично */ }
+    }
+    async function stlDbPendingIds() {
+      try {
+        const db = await stlDbOpen();
+        return await new Promise(res => {
+          const ids = [];
+          const req = db.transaction(STL_STORE).objectStore(STL_STORE).openCursor();
+          req.onsuccess = (e) => {
+            const c = e.target.result;
+            if (c) { if (c.value && c.value.uploaded === false) ids.push(Number(c.key)); c.continue(); }
+            else res(ids);
+          };
+          req.onerror = () => res(ids);
+        });
+      } catch (e) { return []; }
+    }
+
+    // Перетворює «старий» формат (повний base64 у stlUrl) на легкий маркер
+    function normalizeStlUrl(pid, url) {
+      if (!url || typeof url !== "string") return null;
+      if (!isInlineStl(url)) return url;
+      const ver = Date.now();
+      stlMemCache.set(pid, { data: url, ver });
+      stlDbPut(pid, { data: url, ver, uploaded: false });
+      if (isAdminAuthenticated) pendingStlIds.add(pid); // вивантажує в хмару лише адмін
+      stlMigratedCount++;
+      return `${STL_CLOUD_PREFIX}${pid}:${ver}`;
+    }
+
+    // Викликається, коли адмін обирає .STL файл у формі товару
+    async function storeLocalStl(pid, dataUrl) {
+      const ver = Date.now();
+      stlMemCache.set(pid, { data: dataUrl, ver });
+      await stlDbPut(pid, { data: dataUrl, ver, uploaded: false });
+      pendingStlIds.add(pid);
+      return `${STL_CLOUD_PREFIX}${pid}:${ver}`;
+    }
+
+    // Вивантаження STL у Firebase (stl/<id>); force=true — повторно надіслати всі, що є локально
+    async function uploadPendingStls(list, force = false) {
+      let ok = 0, failed = 0;
+      for (const p of (Array.isArray(list) ? list : [])) {
+        if (!p || !isCloudStl(p.stlUrl)) continue;
+        const { pid, ver } = parseCloudStl(p.stlUrl);
+        if (!force && !pendingStlIds.has(pid)) continue;
+
+        let entry = stlMemCache.get(pid);
+        if (!entry || !entry.data) {
+          const e = await stlDbGet(pid);
+          if (e && e.data) { entry = { data: e.data, ver: e.ver }; stlMemCache.set(pid, entry); }
+        }
+        if (!entry || !entry.data) continue;                       // на цьому пристрої немає копії файла
+        if (ver && entry.ver && ver !== entry.ver) continue;        // локальна копія застаріла — не перезаписуємо хмару
+
+        try {
+          await firebaseFastWrite(`stl/${pid}`, { data: entry.data, ver: ver || entry.ver || 0, ts: Date.now() }, 90000);
+          pendingStlIds.delete(pid);
+          stlDbPut(pid, { data: entry.data, ver: entry.ver, uploaded: true });
+          ok++;
+        } catch (err) {
+          failed++;
+          console.warn("Не вдалося вивантажити STL товару", pid, err);
+        }
+      }
+      return { ok, failed };
+    }
+
+    async function restorePendingStls() {
+      if (!isAdminAuthenticated) return;
+      const ids = await stlDbPendingIds();
+      ids.forEach(id => pendingStlIds.add(id));
+      if (pendingStlIds.size === 0) return;
+      setTimeout(async () => {
+        const r = await uploadPendingStls(products);
+        if (r.ok > 0) showToast(`☁️ Вивантажено 3D-моделей у хмару: ${r.ok}`);
+      }, 2500);
+    }
+
+    // Повертає вміст STL: пам'ять -> IndexedDB -> Firebase
+    async function getCloudStlData(pid, ver) {
+      const mem = stlMemCache.get(pid);
+      if (mem && mem.data && (!ver || !mem.ver || mem.ver === ver)) return mem.data;
+
+      const local = await stlDbGet(pid);
+      if (local && local.data && (!ver || !local.ver || local.ver === ver)) {
+        stlMemCache.set(pid, { data: local.data, ver: local.ver });
+        return local.data;
+      }
+
+      const remote = await firebaseFastRead(`stl/${pid}/data`, 60000);
+      if (isInlineStl(remote)) {
+        stlMemCache.set(pid, { data: remote, ver });
+        stlDbPut(pid, { data: remote, ver, uploaded: true });
+        return remote;
+      }
+      return null;
+    }
+
+    async function resolveStlSource(url) {
+      if (!isCloudStl(url)) return url;
+      const { pid, ver } = parseCloudStl(url);
+      const data = await getCloudStlData(pid, ver);
+      if (!data) throw new Error("STL відсутній у хмарі");
+      return data;
+    }
+
+    function stlLinkAttrs(product) {
+      if (isCloudStl(product.stlUrl)) return `href="#" onclick="downloadProductStl(${product.id}); return false;"`;
+      return `href="${product.stlUrl}" download`;
+    }
+
+    async function downloadProductStl(productId) {
+      const prod = products.find(p => p.id === productId);
+      if (!prod || !prod.stlUrl) return;
+      try {
+        const src = await resolveStlSource(prod.stlUrl);
+        const blob = new Blob([dataUrlToArrayBuffer(src)], { type: "model/stl" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `${String(prod.title || "model").replace(/[^\p{L}\p{N}_-]+/gu, "_")}.stl`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      } catch (err) {
+        showToast("⚠️ Файл .STL ще не синхронізований з хмарою");
+      }
+    }
+
+    // Гібридний запис у Firebase: REST + WebSocket SDK. Великі пакети (STL) йдуть лише через REST із довгим таймаутом.
+    async function firebaseFastWrite(path, payload, timeoutMs = 7000) {
       const cleanPayload = JSON.parse(JSON.stringify(payload));
       const dbUrl = (firebaseConfig && firebaseConfig.databaseURL) ? firebaseConfig.databaseURL.replace(/\/$/, "") : "";
+      const bodyStr = JSON.stringify(cleanPayload);
+      const isLarge = bodyStr.length > 300000;
 
-      const restPromise = (async () => {
+      const restWrite = async () => {
         if (!dbUrl) throw new Error("No databaseURL");
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 7000);
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
         try {
-          const res = await fetch(`https://d-sal-hub-default-rtdb.europe-west1.firebasedatabase.app/${path}.json`, {
+          const res = await fetch(`${dbUrl}/${path}.json`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(cleanPayload),
+            body: bodyStr,
             signal: controller.signal
           });
-          clearTimeout(timer);
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return await res.json();
-        } catch (e) {
+        } finally {
           clearTimeout(timer);
-          throw e;
         }
-      })();
+      };
 
-      const sdkPromise = new Promise((resolve, reject) => {
+      const sdkWrite = () => new Promise((resolve, reject) => {
         if (!db) return reject(new Error("No Firebase SDK"));
-        const t = setTimeout(() => reject(new Error("SDK timeout")), 7000);
+        const t = setTimeout(() => reject(new Error("SDK timeout")), timeoutMs);
         db.ref(path).set(cleanPayload).then(() => {
           clearTimeout(t);
           resolve(true);
@@ -2645,22 +2865,21 @@
         });
       });
 
-      // Виконуємо паралельно: що відповість першим (зазвичай REST за 100-200 мс), те й завершує синхронізацію
-      try {
-        await Promise.any([restPromise, sdkPromise]);
-        return true;
-      } catch (aggErr) {
-        throw aggErr;
+      if (isLarge) {
+        try { await restWrite(); return true; }
+        catch (restErr) { await sdkWrite(); return true; }
       }
+      await Promise.any([restWrite(), sdkWrite()]);
+      return true;
     }
 
-    async function firebaseFastRead(path) {
+    async function firebaseFastRead(path, timeoutMs = 5000) {
       const dbUrl = (firebaseConfig && firebaseConfig.databaseURL) ? firebaseConfig.databaseURL.replace(/\/$/, "") : "";
       if (!dbUrl) return null;
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 5000);
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
       try {
-        const res = await fetch(`https://d-sal-hub-default-rtdb.europe-west1.firebasedatabase.app/${path}.json`, { signal: controller.signal });
+        const res = await fetch(`${dbUrl}/${path}.json`, { signal: controller.signal });
         clearTimeout(timer);
         if (!res.ok) return null;
         return await res.json();
@@ -2677,14 +2896,33 @@
 
       // Перевіряємо, чи в хмарі ще лежить стара «важка» база (>250 КБ з необрізаними Base64)
       const rawSize = JSON.stringify(rawArr).length;
+      const prevProducts = Array.isArray(products) ? products : [];
+      stlMigratedCount = 0;
       products = hydrateProductsFromCloud(rawArr);
+
+      // Не даємо знімку з хмари затерти .STL, який адмін додав, але він ще не вивантажився
+      if (pendingStlIds.size > 0) {
+        const prevById = new Map(prevProducts.map(x => [Number(x.id), x]));
+        products = products.map(p => {
+          const prev = prevById.get(Number(p.id));
+          return (pendingStlIds.has(Number(p.id)) && prev && isCloudStl(prev.stlUrl)) ? { ...p, stlUrl: prev.stlUrl } : p;
+        });
+      }
+      const hadInlineStl = stlMigratedCount > 0;
       saveProductsToStorage(false);
       renderProducts();
       renderCategoryPills();
       if (isAdminAuthenticated) renderAdminProductsTable();
 
       // Якщо в хмарі була стара важка версія (>250 КБ), автоматично перезаписуємо її оптимізованою (~14 КБ)
-      if (rawSize > 250000) {
+      if (hadInlineStl) {
+        // У хмарі лежав «важкий» каталог зі вбудованими STL: адмін спершу виносить їх у stl/<id>, і лише потім стискає каталог
+        if (isAdminAuthenticated) {
+          uploadPendingStls(products).then(r => {
+            if (r.failed === 0) return firebaseFastWrite("products", serializeProductsForCloud(products));
+          }).catch(() => {});
+        }
+      } else if (rawSize > 250000) {
         const optimizedCloud = serializeProductsForCloud(products);
         firebaseFastWrite("products", optimizedCloud).catch(() => {});
       }
@@ -2815,6 +3053,7 @@
       updateFirebaseBadge("syncing", "Вивантаження в хмару...");
 
       try {
+        const stlRes = await uploadPendingStls(products, true);
         const cloudProducts = serializeProductsForCloud(products);
         const payloadKb = (JSON.stringify(cloudProducts).length / 1024).toFixed(1);
 
@@ -2832,7 +3071,9 @@
 
         const timeStr = new Date().toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
         updateFirebaseBadge(true, `Синхронізовано о ${timeStr} (${payloadKb} КБ)`);
-        showToast(`☁️ Каталог (${payloadKb} КБ) та налаштування миттєво синхронізовано!`);
+        const stlNote = stlRes.ok ? ` · 3D-моделей: ${stlRes.ok}` : "";
+        const stlWarn = stlRes.failed ? ` ⚠️ .STL не вивантажено: ${stlRes.failed}` : "";
+        showToast(`☁️ Каталог (${payloadKb} КБ) синхронізовано${stlNote}${stlWarn}`);
       } catch (err) {
         console.warn("Firebase sync error:", err);
         updateFirebaseBadge(false, "Помилка з'єднання з хмарою");
@@ -2971,10 +3212,19 @@
         updateFirebaseBadge("syncing", "Синхронізація...");
         const cloudPayload = serializeProductsForCloud(products);
         const kb = (JSON.stringify(cloudPayload).length / 1024).toFixed(1);
-        firebaseFastWrite("products", cloudPayload)
+        let stlFailed = 0;
+        const stlStep = (pendingStlIds.size > 0 ? uploadPendingStls(products) : Promise.resolve({ ok: 0, failed: 0 }))
+          .then(r => { stlFailed = r.failed; });
+        stlStep
+          .then(() => firebaseFastWrite("products", cloudPayload))
           .then(() => {
             const timeStr = new Date().toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-            updateFirebaseBadge(true, `Синхронізовано о ${timeStr} (${kb} КБ)`);
+            if (stlFailed > 0) {
+              updateFirebaseBadge(false, ".STL не вивантажено — натисніть «Синхронізувати з хмарою»");
+              showToast("⚠️ 3D-модель збережена локально, але ще не в хмарі. Повторіть синхронізацію.");
+            } else {
+              updateFirebaseBadge(true, `Синхронізовано о ${timeStr} (${kb} КБ)`);
+            }
           })
           .catch(err => {
             console.warn("Помилка синхронізації товарів із Firebase:", err);
@@ -3225,7 +3475,7 @@
             <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">${product.description}</p>
             ${product.stlUrl ? `
               <div class="mt-2">
-                <a href="${product.stlUrl}" download class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] font-bold border border-blue-200 transition">
+                <a ${stlLinkAttrs(product)} class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] font-bold border border-blue-200 transition">
                   <i data-lucide="download" class="w-3.5 h-3.5"></i>
                   <span>Завантажити .STL файл</span>
                 </a>
@@ -4581,7 +4831,7 @@
           const finalImage = pendingUploadedImage || urlInputVal || existing.image || defaultFallbackImg;
           let finalStlUrl = existing.stlUrl || null;
           if (stlDataUrl) {
-            finalStlUrl = stlDataUrl;
+            finalStlUrl = await storeLocalStl(existing.id, stlDataUrl);
           } else if (editingRemoveStl) {
             finalStlUrl = null;
           }
@@ -4632,8 +4882,10 @@
 
       // РЕЖИМ ДОДАВАННЯ НОВОГО ТОВАРУ
       const finalNewImage = pendingUploadedImage || urlInputVal || defaultFallbackImg;
+      const newProductId = Date.now();
+      const newStlUrl = stlDataUrl ? await storeLocalStl(newProductId, stlDataUrl) : null;
       const newProduct = {
-        id: Date.now(),
+        id: newProductId,
         title: titleVal,
         category: categoryVal,
         author: authorVal,
@@ -4646,7 +4898,7 @@
         colors: colorsVal,
         image: finalNewImage,
         demoShape: demoShapeVal,
-        stlUrl: stlDataUrl || null,
+        stlUrl: newStlUrl,
         description: descVal
       };
 
