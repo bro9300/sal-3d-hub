@@ -986,6 +986,51 @@
           </div>
         </div>
 
+        <!-- 2.5. БЛОК GOOGLE ДИСКУ (СХОВИЩЕ ВИСОКОПОЛІГОНАЛЬНИХ 3D-ФАЙЛІВ .STL) -->
+        <div class="bg-sky-50/90 p-3 sm:p-4 rounded-2xl border border-sky-200 space-y-3">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-xl bg-sky-600 text-white flex items-center justify-center font-bold shadow">
+                <i data-lucide="hard-drive" class="w-4 h-4"></i>
+              </div>
+              <div>
+                <h4 class="text-xs font-black uppercase text-slate-800">Google Диск — Сховище High-Poly 3D-моделей (.STL)</h4>
+                <p class="text-[10px] text-slate-500">Зберігайте оригінальні високополігональні 3D-файли (до 50+ МБ) на Google Диску без стиснення геометрії</p>
+              </div>
+            </div>
+            <span id="gdrive-status-pill" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-300">Прямі посилання активні</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">URL Google Apps Script (для авто-вивантаження .STL):</label>
+              <input type="text" id="gdrive-script-url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono">
+              <span class="text-[9px] text-slate-500">Необов'язково для звичайних посилань; потрібно лише для автоматичного завантаження файлів з адмінки на ваш Google Диск</span>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">ID або посилання на папку Google Drive:</label>
+              <input type="text" id="gdrive-folder-id" placeholder="Наприклад: 1xYzAbCdEfGhIjKlMnOpQrStUvWxYz" class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono">
+              <span class="text-[9px] text-slate-500">Папка на Google Диску з доступом «Усі, хто має посилання»</span>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between gap-2 pt-1 flex-wrap">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <button type="button" onclick="copyGoogleDriveAppsScriptCode()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-sky-300 font-bold rounded-xl text-xs shadow-sm transition flex items-center gap-1.5" title="Скопіювати готовий код для script.google.com">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                <span>📋 Скопіювати код скрипта для Google Диску</span>
+              </button>
+              <button type="button" onclick="testGoogleDriveConnection()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm transition">
+                🧪 Тест Google Диску
+              </button>
+            </div>
+            <button type="button" onclick="saveGoogleDriveSettings()" class="px-4 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl text-xs shadow-sm transition">
+              Зберегти Google Диск
+            </button>
+          </div>
+        </div>
+
         <!-- 3. БЛОК КЕРУВАННЯ КАТЕГОРІЯМИ (ВИДАЛЕННЯ ТА ДОДАВАННЯ) -->
         <div class="bg-indigo-50/80 p-3 sm:p-4 rounded-2xl border border-indigo-200 space-y-3">
           <div class="flex items-center justify-between flex-wrap gap-2">
@@ -1088,27 +1133,34 @@
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">3D-модель (.STL файл):</label>
-                <input type="file" id="new-stl-file" accept=".stl" onchange="handleAdminStlFileSelect(event)" class="w-full text-[10px] text-slate-500 file:mr-1.5 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:font-bold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 cursor-pointer">
-                <div id="edit-stl-status-bar" class="hidden mt-1 flex items-center justify-between gap-1 bg-blue-50 border border-blue-200 rounded-md px-2 py-0.5 text-[10px] text-blue-800">
-                  <span id="edit-stl-status-text" class="truncate font-semibold">✅ .STL прикріплено</span>
-                  <div class="flex items-center gap-1.5 shrink-0">
-                    <button type="button" onclick="previewAdminFormStl()" class="text-blue-700 hover:text-blue-900 font-bold underline" title="Перевірити 3D-модель">👁️ Тест 3D</button>
-                    <button type="button" onclick="clearEditingProductStl()" class="text-rose-600 hover:text-rose-800 font-bold" title="Видалити прикріплений STL">✕</button>
-                  </div>
+            <div class="bg-sky-50/70 p-2.5 rounded-xl border border-sky-200/90 space-y-2">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-700 mb-0.5">3D-модель (.STL файл з пристрою):</label>
+                  <input type="file" id="new-stl-file" accept=".stl" onchange="handleAdminStlFileSelect(event)" class="w-full text-[10px] text-slate-500 file:mr-1.5 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:font-bold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 cursor-pointer">
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-700 mb-0.5">Резервна 3D-форма (якщо без .STL):</label>
+                  <select id="new-demo-shape" class="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
+                    <option value="cylinder">Циліндр (брелок, стакан)</option>
+                    <option value="wedge">Підставка під гаджет</option>
+                    <option value="box">Коробка / Кейс</option>
+                    <option value="torus">Кільце / Антистрес</option>
+                    <option value="castle">Замок / Фігурка</option>
+                  </select>
                 </div>
               </div>
               <div>
-                <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Форма 3D-огляду:</label>
-                <select id="new-demo-shape" class="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
-                  <option value="cylinder">Циліндр (брелок, стакан)</option>
-                  <option value="wedge">Підставка під гаджет</option>
-                  <option value="box">Коробка / Кейс</option>
-                  <option value="torus">Кільце / Антистрес</option>
-                  <option value="castle">Замок / Фігурка</option>
-                </select>
+                <label class="block text-[10px] font-bold text-sky-900 mb-0.5">☁️ Або посилання на .STL у Google Диску (High-Poly без обмежень розміру):</label>
+                <input type="text" id="new-stl-gdrive-url" oninput="handleAdminGdriveUrlInput(this.value)" placeholder="https://drive.google.com/file/d/.../view або ID файлу Google Drive" class="w-full px-2.5 py-1.5 bg-white border border-sky-300 rounded-lg text-[11px] font-mono focus:ring-2 focus:ring-sky-500 outline-none">
+                <span class="text-[9px] text-slate-500 block mt-0.5">Завантажте .STL на Google Диск («Усі, хто має посилання») і вставте посилання сюди — або оберіть файл вище</span>
+              </div>
+              <div id="edit-stl-status-bar" class="hidden flex items-center justify-between gap-1 bg-blue-50 border border-blue-200 rounded-md px-2 py-1 text-[10px] text-blue-800">
+                <span id="edit-stl-status-text" class="truncate font-semibold">✅ .STL прикріплено</span>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button type="button" onclick="previewAdminFormStl()" class="text-blue-700 hover:text-blue-900 font-bold underline" title="Перевірити 3D-модель">👁️ Тест 3D</button>
+                  <button type="button" onclick="clearEditingProductStl()" class="text-rose-600 hover:text-rose-800 font-bold" title="Видалити прикріплений STL">✕</button>
+                </div>
               </div>
             </div>
 
@@ -1902,6 +1954,8 @@
     const STORAGE_KEY_TG_USERNAME = "sal_tg_username";
     const STORAGE_KEY_MONO_JAR = "sal_mono_jar_link";
     const STORAGE_KEY_MONO_TITLE = "sal_mono_jar_title";
+    const STORAGE_KEY_GDRIVE_SCRIPT = "sal_gdrive_script_url";
+    const STORAGE_KEY_GDRIVE_FOLDER = "sal_gdrive_folder_id";
 
     let products = [];
     let cart = [];
@@ -1918,6 +1972,9 @@
     let telegramUsername = localStorage.getItem(STORAGE_KEY_TG_USERNAME) || "stepan_lyceum_3d_bot";
     let monobankJarLink = localStorage.getItem(STORAGE_KEY_MONO_JAR) || "https://send.monobank.ua/jar/89mXHukogN";
     let monobankJarTitle = localStorage.getItem(STORAGE_KEY_MONO_TITLE) || "Банка STEM-хабу на пластик та ЗСУ 🇺🇦";
+    let gdriveScriptUrl = localStorage.getItem(STORAGE_KEY_GDRIVE_SCRIPT) || "";
+    let gdriveFolderId = localStorage.getItem(STORAGE_KEY_GDRIVE_FOLDER) || "";
+    let pendingAdminGdriveRef = "";
     let lastOrderDetails = null;
 
     /* =========================================================
@@ -2205,7 +2262,221 @@
       }
     }
 
-    // Очищення старих спотворених моделей (якщо вони залишились у кеші після v2)
+    // =========================================================================
+    // ПІДТРИМКА GOOGLE DRIVE ДЛЯ ВИСОКОПОЛІГОНАЛЬНИХ 3D-МОДЕЛЕЙ (.STL)
+    // =========================================================================
+    const gdriveMemoryCache = new Map();
+
+    // Витягує чистий Google Drive File ID із будь-якого посилання drive.google.com або gdrive://ID
+    function extractGoogleDriveFileId(inputStr) {
+      if (!inputStr || typeof inputStr !== "string") return null;
+      const trimmed = inputStr.trim();
+      if (!trimmed) return null;
+      if (trimmed.startsWith("gdrive://")) {
+        return trimmed.replace("gdrive://", "").split(/[?&/]/)[0].trim() || null;
+      }
+      const matchFileD = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]{15,})/);
+      if (matchFileD) return matchFileD[1];
+      const matchIdParam = trimmed.match(/[?&]id=([a-zA-Z0-9_-]{15,})/);
+      if (matchIdParam) return matchIdParam[1];
+      if (/^[a-zA-Z0-9_-]{25,50}$/.test(trimmed) && !trimmed.includes(".")) {
+        return trimmed;
+      }
+      return null;
+    }
+
+    function extractGoogleDriveFolderId(inputStr) {
+      if (!inputStr || typeof inputStr !== "string") return "";
+      const trimmed = inputStr.trim();
+      const matchFolder = trimmed.match(/\/folders\/([a-zA-Z0-9_-]{15,})/);
+      if (matchFolder) return matchFolder[1];
+      return trimmed;
+    }
+
+    function isValidStlArrayBuffer(buf) {
+      if (!buf || buf.byteLength < 84) return false;
+      const bytes = new Uint8Array(buf, 0, Math.min(256, buf.byteLength));
+      let headStr = "";
+      for (let i = 0; i < Math.min(120, bytes.length); i++) {
+        headStr += String.fromCharCode(bytes[i]);
+      }
+      const lower = headStr.trim().toLowerCase();
+      // Відсікаємо HTML-сторінки Google Drive (якщо файл закритий або потребує входу)
+      if (lower.startsWith("<!doctype") || lower.startsWith("<html") || lower.includes("<head>")) {
+        return false;
+      }
+      return true;
+    }
+
+    // Завантаження високополігонального .STL файлу з Google Drive (через Google Apps Script або каскад проксі)
+    async function fetchStlBufferFromGoogleDrive(fileId) {
+      if (!fileId) return null;
+      if (gdriveMemoryCache.has(fileId)) {
+        return gdriveMemoryCache.get(fileId);
+      }
+
+      // 1. Якщо підключено Google Apps Script Bridge — використовуємо його в першу чергу (найшвидший офіційний канал без CORS)
+      if (gdriveScriptUrl && gdriveScriptUrl.startsWith("https://script.google.com/")) {
+        try {
+          const sep = gdriveScriptUrl.includes("?") ? "&" : "?";
+          const res = await fetch(`${gdriveScriptUrl}${sep}id=${encodeURIComponent(fileId)}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.ok && data.base64) {
+              const buf = base64ToArrayBuffer(data.base64);
+              if (isValidStlArrayBuffer(buf)) {
+                gdriveMemoryCache.set(fileId, buf);
+                return buf;
+              }
+            }
+          }
+        } catch (e) {
+          console.warn("Google Apps Script fetch fallback:", e);
+        }
+      }
+
+      // 2. Каскад швидких CORS-проксі для прямих публічних посилань Google Drive ("Усі, хто має посилання")
+      const directDownloadUrl = `https://drive.google.com/uc?export=download&id=${encodeURIComponent(fileId)}`;
+      const driveUserContentUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`;
+
+      const proxyUrls = [
+        `https://corsproxy.io/?${encodeURIComponent(directDownloadUrl)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(directDownloadUrl)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(directDownloadUrl)}`,
+        `https://corsproxy.io/?${encodeURIComponent(driveUserContentUrl)}`
+      ];
+
+      for (const proxyUrl of proxyUrls) {
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 18000);
+          const res = await fetch(proxyUrl, { signal: controller.signal });
+          clearTimeout(timer);
+          if (res.ok) {
+            const buf = await res.arrayBuffer();
+            if (isValidStlArrayBuffer(buf)) {
+              gdriveMemoryCache.set(fileId, buf);
+              return buf;
+            }
+          }
+        } catch (e) {}
+      }
+
+      return null;
+    }
+
+    // Автоматичне вивантаження .STL файлу з браузера прямо на Google Диск через Google Apps Script
+    async function uploadStlBufferToGoogleDrive(arrayBuffer, fileName = "model.stl") {
+      if (!gdriveScriptUrl || !gdriveScriptUrl.startsWith("https://script.google.com/")) {
+        return null;
+      }
+      const b64 = arrayBufferToBase64(arrayBuffer);
+      const payload = {
+        fileName: fileName,
+        folderId: extractGoogleDriveFolderId(gdriveFolderId || ""),
+        base64: b64
+      };
+      const res = await fetch(gdriveScriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data && data.ok && data.fileId) {
+        gdriveMemoryCache.set(data.fileId, arrayBuffer);
+        return data;
+      }
+      throw new Error((data && data.error) || "Google Drive upload error");
+    }
+
+    // Обчислення плавних вершинних нормалей за кутом перегину (Crease Angle = 38°):
+    // робить округлі поверхні високополігональних та середньополігональних моделей ідеально гладенькими (без гранчастості),
+    // але зберігає чіткі технічні ребра там, де кут між гранями перевищує 38 градусів!
+    function computeSmoothCreaseNormals(geometry, creaseAngleDeg = 38) {
+      if (!geometry || !geometry.attributes || !geometry.attributes.position) return;
+      const posAttr = geometry.attributes.position;
+      const vertexCount = posAttr.count;
+      if (vertexCount < 3 || vertexCount > 900000) {
+        geometry.computeVertexNormals();
+        return;
+      }
+      const posArr = posAttr.array;
+      const faceNormals = new Float32Array(vertexCount * 3);
+
+      // 1. Обчислюємо нормаль кожного трикутника
+      for (let i = 0; i < vertexCount; i += 3) {
+        const i9 = i * 3;
+        const ax = posArr[i9], ay = posArr[i9 + 1], az = posArr[i9 + 2];
+        const bx = posArr[i9 + 3], by = posArr[i9 + 4], bz = posArr[i9 + 5];
+        const cx = posArr[i9 + 6], cy = posArr[i9 + 7], cz = posArr[i9 + 8];
+        const ux = bx - ax, uy = by - ay, uz = bz - az;
+        const vx = cx - ax, vy = cy - ay, vz = cz - az;
+        let nx = uy * vz - uz * vy;
+        let ny = uz * vx - ux * vz;
+        let nz = ux * vy - uy * vx;
+        const len = Math.hypot(nx, ny, nz) || 1;
+        nx /= len; ny /= len; nz /= len;
+        faceNormals[i9] = nx; faceNormals[i9 + 1] = ny; faceNormals[i9 + 2] = nz;
+        faceNormals[i9 + 3] = nx; faceNormals[i9 + 4] = ny; faceNormals[i9 + 5] = nz;
+        faceNormals[i9 + 6] = nx; faceNormals[i9 + 7] = ny; faceNormals[i9 + 8] = nz;
+      }
+
+      // 2. Групуємо спільні вершини у просторову хеш-таблицю
+      const vertMap = new Map();
+      for (let v = 0; v < vertexCount; v++) {
+        const idx = v * 3;
+        const kx = Math.round(posArr[idx] * 10000);
+        const ky = Math.round(posArr[idx + 1] * 10000);
+        const kz = Math.round(posArr[idx + 2] * 10000);
+        const key = `${kx}_${ky}_${kz}`;
+        let bucket = vertMap.get(key);
+        if (!bucket) {
+          bucket = [];
+          vertMap.set(key, bucket);
+        }
+        bucket.push(v);
+      }
+
+      // 3. Усереднюємо нормалі сусідніх граней, якщо кут між ними менший за creaseAngleDeg
+      const cosThreshold = Math.cos((creaseAngleDeg * Math.PI) / 180);
+      const smoothNormals = new Float32Array(vertexCount * 3);
+
+      for (const bucket of vertMap.values()) {
+        const len = bucket.length;
+        if (len === 1) {
+          const v0 = bucket[0] * 3;
+          smoothNormals[v0] = faceNormals[v0];
+          smoothNormals[v0 + 1] = faceNormals[v0 + 1];
+          smoothNormals[v0 + 2] = faceNormals[v0 + 2];
+          continue;
+        }
+        for (let a = 0; a < len; a++) {
+          const va = bucket[a] * 3;
+          const fnx = faceNormals[va], fny = faceNormals[va + 1], fnz = faceNormals[va + 2];
+          let sx = fnx, sy = fny, sz = fnz;
+          for (let b = 0; b < len; b++) {
+            if (a === b) continue;
+            const vb = bucket[b] * 3;
+            const onx = faceNormals[vb], ony = faceNormals[vb + 1], onz = faceNormals[vb + 2];
+            const dot = fnx * onx + fny * ony + fnz * onz;
+            if (dot >= cosThreshold) {
+              sx += onx;
+              sy += ony;
+              sz += onz;
+            }
+          }
+          const slen = Math.hypot(sx, sy, sz) || 1;
+          smoothNormals[va] = sx / slen;
+          smoothNormals[va + 1] = sy / slen;
+          smoothNormals[va + 2] = sz / slen;
+        }
+      }
+
+      geometry.setAttribute("normal", new THREE.BufferAttribute(smoothNormals, 3));
+    }
+
+    // Очищення старих спотворених моделей (якщо вони залишились у кеші або Firebase після v2)
     async function cleanDistortedStlsFromProducts() {
       let cleanedAny = false;
       for (let i = 0; i < products.length; i++) {
@@ -2224,8 +2495,12 @@
               if (DEFAULT_STL_MAP[p.id]) {
                 p.stlUrl = DEFAULT_STL_MAP[p.id];
                 p.stlChunks = null;
+                p.hasLegacyLowPolyStl = false;
                 await deleteStlRecordFromIdb(STL_IDB_STORE_PRODUCTS, p.id);
                 cleanedAny = true;
+              } else {
+                // Позначаємо кастомний товар, у якому з v2 залишилась стара спрощена модель, щоб адмін бачив підказку замінити її
+                p.hasLegacyLowPolyStl = true;
               }
             }
           } catch (e) {}
@@ -2267,7 +2542,30 @@
       }
       if (!stlRef || stlRef === "__NO_STL__") return null;
 
-      // 1. Якщо є точний локальний запис у IndexedDB (для миттєвого відображення великих моделей)
+      // 1. Якщо це модель на Google Диску (`gdrive://FILE_ID` або посилання `https://drive.google.com/...`)
+      const gdriveId = extractGoogleDriveFileId(stlRef);
+      if (gdriveId) {
+        if (pid) {
+          const cachedIdb = await getStlRecordFromIdb(STL_IDB_STORE_PRODUCTS, pid);
+          if (cachedIdb && cachedIdb.buffer && cachedIdb.gdriveId === gdriveId) {
+            return { buffer: cachedIdb.buffer, fileName: cachedIdb.fileName || (prod && prod.stlFileName) || `gdrive_${gdriveId}.stl` };
+          }
+        }
+        const gdriveBuf = await fetchStlBufferFromGoogleDrive(gdriveId);
+        if (gdriveBuf) {
+          const fName = (prod && prod.stlFileName) || `gdrive_${gdriveId}.stl`;
+          if (pid) {
+            saveStlRecordToIdb(STL_IDB_STORE_PRODUCTS, pid, {
+              buffer: gdriveBuf,
+              fileName: fName,
+              gdriveId: gdriveId
+            });
+          }
+          return { buffer: gdriveBuf, fileName: fName };
+        }
+      }
+
+      // 1b. Якщо є точний локальний запис у IndexedDB (для миттєвого відображення великих моделей)
       if (pid && (stlRef === "__CHUNKED_IN_PRODUCT__" || stlRef.startsWith("__CLOUD_STL__:"))) {
         const localRec = await getStlRecordFromIdb(STL_IDB_STORE_PRODUCTS, pid);
         if (localRec && localRec.buffer && !isLegacyDistortedStlBuffer(localRec.buffer)) {
@@ -2367,11 +2665,11 @@
 
       function createDefaultShape() {
         let geo;
-        if (demoShape === 'cylinder') geo = new THREE.CylinderGeometry(9, 9, 3, 32);
-        else if (demoShape === 'wedge') geo = new THREE.BoxGeometry(14, 10, 12);
-        else if (demoShape === 'torus') geo = new THREE.TorusGeometry(9, 3.5, 16, 40);
-        else if (demoShape === 'castle') geo = new THREE.CylinderGeometry(7, 9, 14, 8);
-        else geo = new THREE.BoxGeometry(12, 12, 12);
+        if (demoShape === 'cylinder') geo = new THREE.CylinderGeometry(9, 9, 3, 72);
+        else if (demoShape === 'wedge') geo = new THREE.BoxGeometry(14, 10, 12, 4, 4, 4);
+        else if (demoShape === 'torus') geo = new THREE.TorusGeometry(9, 3.5, 48, 96);
+        else if (demoShape === 'castle') geo = new THREE.CylinderGeometry(7, 9, 14, 64);
+        else geo = new THREE.BoxGeometry(12, 12, 12, 4, 4, 4);
 
         if (currentStlMesh) stlScene.remove(currentStlMesh);
         currentStlMesh = new THREE.Mesh(geo, material);
@@ -2414,6 +2712,8 @@
           let resolved = null;
           if (stlUrl && stlUrl === "__ADMIN_PREVIEW__" && pendingAdminStlBuffer) {
             resolved = { buffer: pendingAdminStlBuffer, fileName: pendingAdminStlFileName || "preview.stl" };
+          } else if (stlUrl && stlUrl === "__ADMIN_PREVIEW__" && pendingAdminGdriveRef) {
+            resolved = await resolveProductStlBuffer(null, pendingAdminGdriveRef);
           } else {
             resolved = await resolveProductStlBuffer(prodObj || productId, stlUrl);
           }
@@ -2422,9 +2722,7 @@
             const loader = new THREE.STLLoader();
             const geometry = loader.parse(resolved.buffer);
             geometry.center();
-            if (!geometry.getAttribute("normal")) {
-              geometry.computeVertexNormals();
-            }
+            computeSmoothCreaseNormals(geometry, 38);
             geometry.computeBoundingBox();
             const box = geometry.boundingBox;
             const maxDim = Math.max(box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z);
@@ -3210,8 +3508,8 @@
         const cp = cloudHydrated[i];
         const pid = Number(cp.id);
         const lp = localMap.get(pid);
-        const cloudHasData = Boolean((cp.stlUrl && String(cp.stlUrl).startsWith("data:")) || (cp.stlChunks && cp.stlChunks.length));
-        const localHasData = Boolean(lp && ((lp.stlUrl && String(lp.stlUrl).startsWith("data:")) || (lp.stlChunks && lp.stlChunks.length)));
+        const cloudHasData = Boolean((cp.stlUrl && (String(cp.stlUrl).startsWith("data:") || String(cp.stlUrl).startsWith("gdrive://") || extractGoogleDriveFileId(cp.stlUrl))) || (cp.stlChunks && cp.stlChunks.length));
+        const localHasData = Boolean(lp && ((lp.stlUrl && (String(lp.stlUrl).startsWith("data:") || String(lp.stlUrl).startsWith("gdrive://") || extractGoogleDriveFileId(lp.stlUrl))) || (lp.stlChunks && lp.stlChunks.length)));
 
         if (localHasData && (!cloudHasData || Number(lp.updatedAt || 0) > Number(cp.updatedAt || 0))) {
           cp.stlUrl = lp.stlUrl;
@@ -3337,8 +3635,17 @@
             telegramUsername = s.telegramUsername;
             localStorage.setItem(STORAGE_KEY_TG_USERNAME, telegramUsername);
           }
+          if (s.gdriveScriptUrl !== undefined) {
+            gdriveScriptUrl = s.gdriveScriptUrl;
+            localStorage.setItem(STORAGE_KEY_GDRIVE_SCRIPT, gdriveScriptUrl);
+          }
+          if (s.gdriveFolderId !== undefined) {
+            gdriveFolderId = s.gdriveFolderId;
+            localStorage.setItem(STORAGE_KEY_GDRIVE_FOLDER, gdriveFolderId);
+          }
           updateTelegramUIStatus();
           updateMonobankUIStatus();
+          updateGoogleDriveUIStatus();
         }
       });
 
@@ -3395,7 +3702,9 @@
             monobankJarTitle: monobankJarTitle || "",
             telegramBotToken: telegramBotToken || "",
             telegramChatId: telegramChatId || "",
-            telegramUsername: telegramUsername || "stepan_lyceum_3d_bot"
+            telegramUsername: telegramUsername || "stepan_lyceum_3d_bot",
+            gdriveScriptUrl: gdriveScriptUrl || "",
+            gdriveFolderId: gdriveFolderId || ""
           }, 15000)
         ]);
         lastLocalWriteTime = Date.now();
@@ -3424,6 +3733,13 @@
       const ord = firebaseOrders.find(o => o.firebaseKey === orderKey);
       const item = ord && Array.isArray(ord.items) ? ord.items[itemIndex] : null;
       if (item && item.stlDataUrl) {
+        const gdId = extractGoogleDriveFileId(item.stlDataUrl);
+        if (gdId) {
+          const gdBuf = await fetchStlBufferFromGoogleDrive(gdId);
+          if (gdBuf) {
+            return { buffer: gdBuf, fileName: item.attachedFileName || fallbackFileName };
+          }
+        }
         const buf = await decodeCloudStlDataUrlToBuffer(item.stlDataUrl);
         if (buf) {
           return { buffer: buf, fileName: item.attachedFileName || fallbackFileName };
@@ -4308,6 +4624,21 @@
         if (file.name.toLowerCase().endsWith(".stl")) {
           rawBuf = ensureLosslessBinaryStl(rawBuf);
         }
+        if (gdriveScriptUrl && gdriveScriptUrl.startsWith("https://script.google.com/")) {
+          try {
+            if (bar && txt) txt.innerText = `☁️ Завантаження ${file.name} на Google Диск майстерні...`;
+            const gdRes = await uploadStlBufferToGoogleDrive(rawBuf, file.name);
+            if (gdRes && gdRes.fileId) {
+              pendingCustomerStlDataUrl = `gdrive://${gdRes.fileId}`;
+              if (bar && txt) {
+                txt.innerText = `✅ Завантажено на Google Диск: ${file.name} (${kb} КБ, 100% точність)`;
+              }
+              return;
+            }
+          } catch (gdErr) {
+            console.warn("Customer Google Drive upload fallback:", gdErr);
+          }
+        }
         pendingCustomerStlDataUrl = await compressBufferToCloudStlDataUrl(rawBuf, "stl");
         const cloudKb = pendingCustomerStlDataUrl ? Math.round(pendingCustomerStlDataUrl.length / 1024) : Math.round(rawBuf.byteLength / 1024);
         if (bar && txt) {
@@ -4554,6 +4885,107 @@
     function testOpenMonobankJar() {
       const link = (document.getElementById("mono-jar-link") && document.getElementById("mono-jar-link").value.trim()) || monobankJarLink;
       window.open(link, "_blank");
+    }
+
+    function saveGoogleDriveSettings() {
+      const scriptInput = document.getElementById("gdrive-script-url");
+      const folderInput = document.getElementById("gdrive-folder-id");
+      gdriveScriptUrl = scriptInput ? scriptInput.value.trim() : "";
+      gdriveFolderId = folderInput ? extractGoogleDriveFolderId(folderInput.value.trim()) : "";
+      if (folderInput) folderInput.value = gdriveFolderId;
+
+      localStorage.setItem(STORAGE_KEY_GDRIVE_SCRIPT, gdriveScriptUrl);
+      localStorage.setItem(STORAGE_KEY_GDRIVE_FOLDER, gdriveFolderId);
+
+      if (db) {
+        db.ref("settings").update({
+          gdriveScriptUrl: gdriveScriptUrl,
+          gdriveFolderId: gdriveFolderId
+        }).catch(() => {});
+      }
+      updateGoogleDriveUIStatus();
+      showToast("☁️ Налаштування Google Диску збережено!");
+    }
+
+    function updateGoogleDriveUIStatus() {
+      const pill = document.getElementById("gdrive-status-pill");
+      const scriptInput = document.getElementById("gdrive-script-url");
+      const folderInput = document.getElementById("gdrive-folder-id");
+      if (scriptInput && !scriptInput.value && gdriveScriptUrl) scriptInput.value = gdriveScriptUrl;
+      if (folderInput && !folderInput.value && gdriveFolderId) folderInput.value = gdriveFolderId;
+
+      if (pill) {
+        if (gdriveScriptUrl && gdriveScriptUrl.startsWith("https://script.google.com/")) {
+          pill.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300";
+          pill.innerText = "Авто-вивантаження на Google Диск активне";
+        } else {
+          pill.className = "text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-300";
+          pill.innerText = "Режим посилань Google Drive активний";
+        }
+      }
+    }
+
+    async function testGoogleDriveConnection() {
+      const scriptVal = (document.getElementById("gdrive-script-url") && document.getElementById("gdrive-script-url").value.trim()) || gdriveScriptUrl;
+      if (!scriptVal) {
+        showToast("ℹ️ Ви можете вставляти прямі посилання Google Drive у форму товару, або додати URL Google Apps Script для авто-вивантаження!");
+        return;
+      }
+      showToast("⏳ Перевірка з'єднання з Google Apps Script...");
+      try {
+        const sep = scriptVal.includes("?") ? "&" : "?";
+        const res = await fetch(`${scriptVal}${sep}ping=1`);
+        const data = await res.json();
+        if (data && data.ok) {
+          showToast("✅ Google Диск успішно підключено! Тепер .STL файли автоматично зберігатимуться на ваш Диск.");
+        } else {
+          showToast(`⚠️ Відповідь скрипта: ${(data && data.error) || 'Перевірте права доступу (Anyone)'}`);
+        }
+      } catch (e) {
+        showToast("❌ Не вдалося з'єднатися з Google Apps Script. Перевірте URL та доступ «Усі (Anyone)».");
+      }
+    }
+
+    function copyGoogleDriveAppsScriptCode() {
+      const scriptCode = [
+        "// SAL 3D Hub — Google Drive High-Poly 3D (.STL) Storage Bridge",
+        "const DEFAULT_FOLDER_ID = \"" + (gdriveFolderId || "") + "\";",
+        "",
+        "function doGet(e) {",
+        "  try {",
+        "    const params = (e && e.parameter) ? e.parameter : {};",
+        "    if (params.ping === '1') return jsonResponse({ ok: true, service: 'SAL 3D Hub Google Drive Bridge' });",
+        "    const fileId = params.id || params.fileId;",
+        "    if (!fileId) return jsonResponse({ ok: false, error: 'Missing fileId' });",
+        "    const file = DriveApp.getFileById(fileId);",
+        "    const bytes = file.getBlob().getBytes();",
+        "    return jsonResponse({ ok: true, fileId: file.getId(), fileName: file.getName(), size: bytes.length, base64: Utilities.base64Encode(bytes) });",
+        "  } catch (err) { return jsonResponse({ ok: false, error: String(err) }); }",
+        "}",
+        "",
+        "function doPost(e) {",
+        "  try {",
+        "    const payload = JSON.parse((e && e.postData && e.postData.contents) || '{}');",
+        "    const fileName = payload.fileName || ('model_' + new Date().getTime() + '.stl');",
+        "    const folderId = payload.folderId || DEFAULT_FOLDER_ID;",
+        "    const decodedBytes = Utilities.base64Decode(payload.base64);",
+        "    const blob = Utilities.newBlob(decodedBytes, 'application/octet-stream', fileName);",
+        "    const file = (folderId && folderId.trim()) ? DriveApp.getFolderById(folderId.trim()).createFile(blob) : DriveApp.createFile(blob);",
+        "    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);",
+        "    return jsonResponse({ ok: true, fileId: file.getId(), fileName: file.getName(), viewUrl: 'https://drive.google.com/file/d/' + file.getId() + '/view?usp=sharing' });",
+        "  } catch (err) { return jsonResponse({ ok: false, error: String(err) }); }",
+        "}",
+        "",
+        "function jsonResponse(obj) {",
+        "  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);",
+        "}"
+      ].join("\n");
+
+      navigator.clipboard.writeText(scriptCode).then(() => {
+        showToast("📋 Код Google Apps Script скопійовано! Вставте його на script.google.com (New Deployment -> Web App -> Anyone).");
+      }).catch(() => {
+        showToast("⚠️ Не вдалося скопіювати код (дивіться файл GOOGLE_DRIVE_STL_SETUP.md в архіві).");
+      });
     }
 
     async function handleOrderSubmission(e) {
@@ -4880,6 +5312,7 @@
         renderAdminOrdersList();
         updateTelegramUIStatus();
         updateMonobankUIStatus();
+        updateGoogleDriveUIStatus();
         const m = document.getElementById("admin-panel-modal");
         if (m) m.classList.remove("hidden");
       } else {
@@ -5047,6 +5480,33 @@
       }
     }
 
+    function handleAdminGdriveUrlInput(val) {
+      const trimmed = (val || "").trim();
+      const bar = document.getElementById("edit-stl-status-bar");
+      const txt = document.getElementById("edit-stl-status-text");
+      if (!trimmed) {
+        pendingAdminGdriveRef = "";
+        return;
+      }
+      editingRemoveStl = false;
+      const gdId = extractGoogleDriveFileId(trimmed);
+      if (gdId) {
+        pendingAdminGdriveRef = `gdrive://${gdId}`;
+        if (bar && txt) {
+          bar.className = "flex items-center justify-between gap-1 bg-sky-100 border border-sky-300 rounded-md px-2 py-1 text-[10px] text-sky-900";
+          txt.innerText = `☁️ Google Drive High-Poly STL (ID: ${gdId.slice(0, 12)}...)`;
+          bar.classList.remove("hidden");
+        }
+      } else if (trimmed.startsWith("http") || trimmed.endsWith(".stl")) {
+        pendingAdminGdriveRef = trimmed;
+        if (bar && txt) {
+          bar.className = "flex items-center justify-between gap-1 bg-sky-100 border border-sky-300 rounded-md px-2 py-1 text-[10px] text-sky-900";
+          txt.innerText = `🔗 Зовнішнє посилання .STL: ${trimmed.split('/').pop()}`;
+          bar.classList.remove("hidden");
+        }
+      }
+    }
+
     async function handleAdminStlFileSelect(e) {
       const file = e.target.files && e.target.files[0];
       const bar = document.getElementById("edit-stl-status-bar");
@@ -5058,22 +5518,47 @@
         return;
       }
       editingRemoveStl = false;
+      const origKb = Math.round(file.size / 1024);
       if (bar && txt) {
-        bar.className = "mt-1 flex items-center justify-between gap-1 bg-blue-50 border border-blue-200 rounded-md px-2 py-0.5 text-[10px] text-blue-800";
-        txt.innerText = `⏳ Gzip-пакування ${file.name} (100% точність)...`;
+        bar.className = "flex items-center justify-between gap-1 bg-blue-50 border border-blue-200 rounded-md px-2 py-1 text-[10px] text-blue-800";
+        txt.innerText = `⏳ Підготовка High-Poly ${file.name} (${origKb} КБ)...`;
         bar.classList.remove("hidden");
       }
       try {
         const rawBuf = await file.arrayBuffer();
         const losslessBuf = ensureLosslessBinaryStl(rawBuf);
-        const compressedDataUrl = await compressBufferToCloudStlDataUrl(losslessBuf, "stl");
         pendingAdminStlBuffer = losslessBuf;
-        pendingAdminStlDataUrl = compressedDataUrl;
         pendingAdminStlFileName = file.name;
-        const origKb = Math.round(rawBuf.byteLength / 1024);
+
+        // Якщо підключено Google Apps Script — одразу вивантажуємо оригінальний високополігональний файл на Google Диск!
+        if (gdriveScriptUrl && gdriveScriptUrl.startsWith("https://script.google.com/")) {
+          if (bar && txt) {
+            txt.innerText = `☁️ Вивантаження ${file.name} (${origKb} КБ) на Google Диск...`;
+          }
+          try {
+            const gdRes = await uploadStlBufferToGoogleDrive(losslessBuf, file.name);
+            if (gdRes && gdRes.fileId) {
+              pendingAdminGdriveRef = `gdrive://${gdRes.fileId}`;
+              pendingAdminStlDataUrl = pendingAdminGdriveRef;
+              const gdInput = document.getElementById("new-stl-gdrive-url");
+              if (gdInput) gdInput.value = gdRes.viewUrl || `https://drive.google.com/file/d/${gdRes.fileId}/view`;
+              if (bar && txt) {
+                bar.className = "flex items-center justify-between gap-1 bg-emerald-50 border border-emerald-300 rounded-md px-2 py-1 text-[10px] text-emerald-900";
+                txt.innerText = `✅ На Google Диску: ${file.name} (${origKb} КБ, 100% High-Poly)`;
+              }
+              showToast(`☁️ Файл «${file.name}» збережено на ваш Google Диск!`);
+              return;
+            }
+          } catch (gdErr) {
+            console.warn("Google Drive auto-upload fallback to Firebase Gzip:", gdErr);
+          }
+        }
+
+        const compressedDataUrl = await compressBufferToCloudStlDataUrl(losslessBuf, "stl");
+        pendingAdminStlDataUrl = compressedDataUrl;
         const cloudKb = compressedDataUrl ? Math.round(compressedDataUrl.length / 1024) : Math.round(losslessBuf.byteLength / 1024);
         if (bar && txt) {
-          txt.innerText = `✅ ${file.name} (${origKb} КБ → ${cloudKb} КБ Gzip, без втрат)`;
+          txt.innerText = `✅ ${file.name} (${origKb} КБ → ${cloudKb} КБ Gzip, 100% полігонів без втрат)`;
         }
       } catch (err) {
         console.warn("Admin STL read error:", err);
@@ -5116,7 +5601,11 @@
 
     async function previewAdminFormStl() {
       if (pendingAdminStlBuffer) {
-        openStandaloneStlPreviewModal(pendingAdminStlFileName || "Нова 3D-модель");
+        openStandaloneStlPreviewModal(pendingAdminStlFileName || "Нова 3D-модель (High-Poly)");
+        return;
+      }
+      if (pendingAdminGdriveRef) {
+        openStandaloneStlPreviewModal("Google Drive 3D-модель");
         return;
       }
       if (editingProductId !== null) {
@@ -5139,8 +5628,11 @@
       pendingAdminStlBuffer = null;
       pendingAdminStlDataUrl = null;
       pendingAdminStlFileName = "";
+      pendingAdminGdriveRef = "";
       const stlInput = document.getElementById("new-stl-file");
       if (stlInput) stlInput.value = "";
+      const gdInput = document.getElementById("new-stl-gdrive-url");
+      if (gdInput) gdInput.value = "";
       const bar = document.getElementById("edit-stl-status-bar");
       const txt = document.getElementById("edit-stl-status-text");
       if (bar && txt) {
@@ -5239,15 +5731,37 @@
         if (imgStatus) imgStatus.innerText = "Поточний URL фото";
       }
 
-      // Налаштування .STL статусу
+      // Налаштування .STL статусу та поля Google Drive
+      pendingAdminGdriveRef = "";
       const stlInput = document.getElementById("new-stl-file");
       if (stlInput) stlInput.value = "";
+      const gdInput = document.getElementById("new-stl-gdrive-url");
+      if (gdInput) {
+        const gdId = extractGoogleDriveFileId(prod.stlUrl);
+        if (gdId) {
+          gdInput.value = `https://drive.google.com/file/d/${gdId}/view?usp=sharing`;
+          pendingAdminGdriveRef = `gdrive://${gdId}`;
+        } else if (prod.stlUrl && (prod.stlUrl.startsWith("http") || prod.stlUrl.startsWith("models/"))) {
+          gdInput.value = prod.stlUrl;
+        } else {
+          gdInput.value = "";
+        }
+      }
       const stlBar = document.getElementById("edit-stl-status-bar");
       const stlText = document.getElementById("edit-stl-status-text");
       if (stlBar && stlText) {
-        if (prod.stlUrl || (prod.stlChunks && prod.stlChunks.length)) {
-          stlBar.className = "mt-1 flex items-center justify-between gap-1 bg-blue-50 border border-blue-200 rounded-md px-2 py-0.5 text-[10px] text-blue-800";
-          stlText.innerText = "✅ 3D-модель (.STL) прикріплена";
+        const gdId = extractGoogleDriveFileId(prod.stlUrl);
+        if (prod.hasLegacyLowPolyStl) {
+          stlBar.className = "flex items-center justify-between gap-1 bg-amber-100 border border-amber-400 rounded-md px-2 py-1 text-[10px] text-amber-900";
+          stlText.innerText = "⚠️ Стара стиснена модель — завантажте оригінальний .STL або вставте посилання Google Drive";
+          stlBar.classList.remove("hidden");
+        } else if (gdId) {
+          stlBar.className = "flex items-center justify-between gap-1 bg-sky-100 border border-sky-300 rounded-md px-2 py-1 text-[10px] text-sky-900";
+          stlText.innerText = `☁️ Google Drive High-Poly STL (${prod.stlFileName || gdId.slice(0, 10)})`;
+          stlBar.classList.remove("hidden");
+        } else if (prod.stlUrl || (prod.stlChunks && prod.stlChunks.length)) {
+          stlBar.className = "flex items-center justify-between gap-1 bg-blue-50 border border-blue-200 rounded-md px-2 py-1 text-[10px] text-blue-800";
+          stlText.innerText = `✅ 3D-модель (.STL) прикріплена${prod.stlFileName ? ': ' + prod.stlFileName : ''}`;
           stlBar.classList.remove("hidden");
         } else {
           stlBar.classList.add("hidden");
@@ -5317,6 +5831,9 @@
       const ratingInput = document.getElementById("new-rating");
       if (ratingInput) ratingInput.value = "5.0";
 
+      pendingAdminGdriveRef = "";
+      const gdInput = document.getElementById("new-stl-gdrive-url");
+      if (gdInput) gdInput.value = "";
       const stlBar = document.getElementById("edit-stl-status-bar");
       if (stlBar) stlBar.classList.add("hidden");
 
@@ -5411,7 +5928,7 @@
                     <span class="text-slate-400">•</span>
                     <span class="text-slate-500 truncate">${prod.category}</span>
                     ${prod.author ? `<span class="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded font-medium">👤 ${prod.author}</span>` : ''}
-                    ${prod.stlUrl ? '<span class="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded font-black">3D STL</span>' : ''}
+                    ${prod.hasLegacyLowPolyStl ? '<span class="text-[9px] bg-amber-100 text-amber-800 border border-amber-300 px-1.5 py-0.2 rounded font-black" title="Стара спрощена модель — оновіть файл або додайте посилання Google Drive">⚠️ Оновіть STL</span>' : (extractGoogleDriveFileId(prod.stlUrl) ? '<span class="text-[9px] bg-sky-100 text-sky-800 border border-sky-300 px-1.5 py-0.2 rounded font-black">☁️ GDrive 3D</span>' : ((prod.stlUrl || (prod.stlChunks && prod.stlChunks.length)) ? '<span class="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded font-black">3D STL</span>' : ''))}
                   </div>
                 </div>
               </div>
@@ -5435,16 +5952,36 @@
     async function handleAddNewProduct(e) {
       e.preventDefault();
       const stlFileInput = document.getElementById("new-stl-file");
+      const gdriveUrlInput = document.getElementById("new-stl-gdrive-url");
+      const rawGdriveVal = gdriveUrlInput ? gdriveUrlInput.value.trim() : "";
+      const parsedGdriveId = extractGoogleDriveFileId(rawGdriveVal || pendingAdminGdriveRef);
+
       let uploadedStlBuffer = pendingAdminStlBuffer;
       let uploadedStlDataUrl = pendingAdminStlDataUrl;
       let uploadedStlName = pendingAdminStlFileName;
 
-      if (!uploadedStlBuffer && stlFileInput && stlFileInput.files && stlFileInput.files[0]) {
+      if (parsedGdriveId) {
+        uploadedStlDataUrl = `gdrive://${parsedGdriveId}`;
+        if (!uploadedStlName) uploadedStlName = `gdrive_${parsedGdriveId.slice(0, 8)}.stl`;
+      } else if (rawGdriveVal && (rawGdriveVal.startsWith("http") || rawGdriveVal.endsWith(".stl"))) {
+        uploadedStlDataUrl = rawGdriveVal;
+        if (!uploadedStlName) uploadedStlName = rawGdriveVal.split("/").pop() || "model.stl";
+      } else if (!uploadedStlBuffer && stlFileInput && stlFileInput.files && stlFileInput.files[0]) {
         const f = stlFileInput.files[0];
         uploadedStlName = f.name;
         const rawBuf = await f.arrayBuffer();
         uploadedStlBuffer = ensureLosslessBinaryStl(rawBuf);
-        uploadedStlDataUrl = await compressBufferToCloudStlDataUrl(uploadedStlBuffer, "stl");
+        if (gdriveScriptUrl && gdriveScriptUrl.startsWith("https://script.google.com/")) {
+          try {
+            const gdRes = await uploadStlBufferToGoogleDrive(uploadedStlBuffer, f.name);
+            if (gdRes && gdRes.fileId) {
+              uploadedStlDataUrl = `gdrive://${gdRes.fileId}`;
+            }
+          } catch (err) {}
+        }
+        if (!uploadedStlDataUrl) {
+          uploadedStlDataUrl = await compressBufferToCloudStlDataUrl(uploadedStlBuffer, "stl");
+        }
       } else if (uploadedStlBuffer && !uploadedStlDataUrl) {
         uploadedStlDataUrl = await compressBufferToCloudStlDataUrl(uploadedStlBuffer, "stl");
       }
@@ -5489,15 +6026,19 @@
             let finalStlFileName = existing.stlFileName || null;
             let stlRemovedFlag = Boolean(existing.stlRemoved);
 
-            if (uploadedStlBuffer && uploadedStlDataUrl) {
+            if (uploadedStlDataUrl) {
               finalStlUrl = uploadedStlDataUrl;
               finalStlChunks = null;
-              finalStlFileName = uploadedStlName || `model_${pid}.stl`;
+              finalStlFileName = uploadedStlName || existing.stlFileName || `model_${pid}.stl`;
               stlRemovedFlag = false;
-              await saveStlRecordToIdb(STL_IDB_STORE_PRODUCTS, pid, {
-                buffer: uploadedStlBuffer,
-                fileName: finalStlFileName
-              });
+              existing.hasLegacyLowPolyStl = false;
+              if (uploadedStlBuffer) {
+                await saveStlRecordToIdb(STL_IDB_STORE_PRODUCTS, pid, {
+                  buffer: uploadedStlBuffer,
+                  fileName: finalStlFileName,
+                  gdriveId: extractGoogleDriveFileId(uploadedStlDataUrl) || null
+                });
+              }
             } else if (editingRemoveStl) {
               finalStlUrl = null;
               finalStlChunks = null;
@@ -5560,13 +6101,16 @@
         let newStlUrl = null;
         let newStlFileName = null;
 
-        if (uploadedStlBuffer && uploadedStlDataUrl) {
+        if (uploadedStlDataUrl) {
           newStlUrl = uploadedStlDataUrl;
           newStlFileName = uploadedStlName || `model_${newPid}.stl`;
-          await saveStlRecordToIdb(STL_IDB_STORE_PRODUCTS, newPid, {
-            buffer: uploadedStlBuffer,
-            fileName: newStlFileName
-          });
+          if (uploadedStlBuffer) {
+            await saveStlRecordToIdb(STL_IDB_STORE_PRODUCTS, newPid, {
+              buffer: uploadedStlBuffer,
+              fileName: newStlFileName,
+              gdriveId: extractGoogleDriveFileId(uploadedStlDataUrl) || null
+            });
+          }
         }
 
         const finalNewImage = pendingUploadedImage || urlInputVal || defaultFallbackImg;
