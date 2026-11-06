@@ -105,11 +105,36 @@
     #banner-3d-container canvas {
       touch-action: none; /* Запобігає конфлікту скролу сторінки під час обертання 3D */
     }
-    .animate-soft-pulse {
-      box-shadow: 0 4px 14px -2px rgba(37, 99, 235, 0.45);
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
     }
-    .animate-amber-glow {
-      box-shadow: 0 0 12px 1px rgba(251, 191, 36, 0.2);
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes shimmerSweep {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .animate-float-slow {
+      animation: floatSlow 5.5s ease-in-out infinite;
+    }
+    .animate-fade-in-up {
+      animation: fadeInUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .skeleton-shimmer {
+      background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+      background-size: 200% 100%;
+      animation: shimmerSweep 1.6s ease-in-out infinite;
+    }
+    .product-card-hover {
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.28s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.28s ease;
+    }
+    .product-card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 32px -10px rgba(30, 58, 138, 0.14), 0 4px 12px -2px rgba(15, 23, 42, 0.06);
+      border-color: #93c5fd;
     }
     #products-grid > div {
       content-visibility: auto;
@@ -222,39 +247,89 @@
     </div>
   </header>
 
-  <!-- Головний статичний банер (без анімації) -->
+  <!-- Головний банер STEM-хабу -->
   <section class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-2 w-full">
-    <div class="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-slate-900 text-white p-5 sm:p-8 lg:p-10 shadow-xl border border-slate-800 grid-pattern">
-      <div class="relative z-10 max-w-3xl flex flex-col items-start gap-3 sm:gap-4">
-        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
-          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-          Степанський ліцей • Сарненщина
-        </div>
-        
-        <h1 class="text-2xl sm:text-4xl lg:text-5xl font-heading font-black tracking-tight leading-tight">
-          3D-мерч, створений ліцеїстами.
-        </h1>
-        
-        <p class="text-slate-300 text-xs sm:text-sm sm:leading-relaxed max-w-2xl">
-          Кожен виріб розроблено та надруковано на базі STEM-лабораторії ліцею з екологічного PLA-пластику. Оглядайте моделі у 3D в картці товару та замовляйте сувеніри з власним гравіюванням!
-        </p>
+    <div class="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 text-white p-5 sm:p-8 lg:p-10 shadow-2xl border border-blue-900/50 grid-pattern">
+      <!-- Декоративні світлові акценти на фоні -->
+      <div class="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full bg-blue-500/20 blur-3xl"></div>
+      <div class="pointer-events-none absolute -bottom-24 left-1/3 w-64 h-64 rounded-full bg-amber-400/10 blur-3xl"></div>
 
-        <div class="flex flex-wrap gap-2.5 pt-2 w-full sm:w-auto">
-          <a href="#catalog" id="hero-catalog-btn" onclick="navigateToCatalog(event)" class="flex-1 sm:flex-none justify-center px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm transition shadow-md flex items-center gap-2 text-center whitespace-nowrap">
-            <span id="hero-catalog-text">Вітрина (29)</span>
-            <i data-lucide="arrow-down" class="w-4 h-4 shrink-0"></i>
-          </a>
-          <button onclick="openCustomOrderModal()" class="flex-1 sm:flex-none justify-center px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs sm:text-sm transition flex items-center gap-1.5">
-            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i>
-            Свій напис / .STL
-          </button>
+      <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
+        <!-- Ліва колонка: заголовок, опис та дії -->
+        <div class="lg:col-span-7 flex flex-col items-start gap-3.5 sm:gap-4">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-blue-200 border border-white/15 backdrop-blur-md text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>STEM-лабораторія • Степанський ліцей</span>
+          </div>
+          
+          <h1 class="text-2xl sm:text-4xl lg:text-5xl font-heading font-black tracking-tight leading-[1.12]">
+            Сучасний 3D-друк та мерч, <span class="bg-gradient-to-r from-amber-300 via-yellow-200 to-sky-300 bg-clip-text text-transparent">створений ліцеїстами.</span>
+          </h1>
+          
+          <p class="text-slate-300 text-xs sm:text-sm sm:leading-relaxed max-w-2xl">
+            Кожен виріб спроєктовано та надруковано у шкільній майстерні з безпечного еко-пластику PLA. Переглядайте точні 3D-моделі у картках товарів або замовляйте друк за власним <strong class="text-white font-semibold">.STL файлом</strong> чи індивідуальним гравіюванням!
+          </p>
+
+          <div class="flex flex-wrap gap-2.5 sm:gap-3 pt-1.5 w-full sm:w-auto">
+            <a href="#catalog" id="hero-catalog-btn" onclick="navigateToCatalog(event)" class="flex-1 sm:flex-none justify-center px-5 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm transition-all duration-300 shadow-lg shadow-blue-600/30 hover:-translate-y-0.5 active:scale-95 flex items-center gap-2 text-center whitespace-nowrap">
+              <span id="hero-catalog-text">Вітрина виробів</span>
+              <i data-lucide="arrow-down" class="w-4 h-4 shrink-0"></i>
+            </a>
+            <button onclick="openCustomOrderModal()" class="flex-1 sm:flex-none justify-center px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white border border-amber-400/40 backdrop-blur-md font-semibold text-xs sm:text-sm transition-all duration-300 hover:-translate-y-0.5 active:scale-95 flex items-center gap-2">
+              <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i>
+              <span>Індивідуальний 3D-друк / .STL</span>
+            </button>
+          </div>
+
+          <!-- Швидкі переваги -->
+          <div class="pt-2 flex items-center gap-3 sm:gap-5 text-[11px] text-slate-300 flex-wrap">
+            <span class="inline-flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10"><i data-lucide="rotate-3d" class="w-3.5 h-3.5 text-sky-400"></i> 360° 3D-огляд</span>
+            <span class="inline-flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i> Еко-пластик PLA</span>
+            <span class="inline-flex items-center gap-1.5 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10"><i data-lucide="heart" class="w-3.5 h-3.5 text-amber-400"></i> Підтримка ЗСУ 🇺🇦</span>
+          </div>
         </div>
 
-        <!-- Швидкі переваги -->
-        <div class="pt-2 flex items-center gap-4 text-[11px] text-slate-400 flex-wrap">
-          <span class="flex items-center gap-1"><i data-lucide="rotate-3d" class="w-3.5 h-3.5 text-blue-400"></i> 360° 3D-огляд</span>
-          <span class="flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i> Еко-пластик PLA</span>
-          <span class="flex items-center gap-1"><i data-lucide="heart" class="w-3.5 h-3.5 text-amber-400"></i> Підтримка ЗСУ 🇺🇦</span>
+        <!-- Права колонка: стильна візуальна вітрина можливостей майстерні -->
+        <div class="lg:col-span-5">
+          <div class="rounded-2xl bg-white/[0.06] backdrop-blur-xl border border-white/15 p-4 sm:p-5 shadow-2xl space-y-3">
+            <!-- Верхня картка з ілюстрацією шарового 3D-друку -->
+            <div class="flex items-center gap-3.5 p-3 rounded-xl bg-slate-900/70 border border-white/10">
+              <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600/30 to-indigo-600/30 border border-blue-400/40 flex items-center justify-center shrink-0 animate-float-slow shadow-inner">
+                <svg class="w-8 h-8 text-amber-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2L3 7l9 5 9-5-9-5z" class="text-sky-300" fill="currentColor" fill-opacity="0.18"/>
+                  <path d="M3 12l9 5 9-5"/>
+                  <path d="M3 17l9 5 9-5" class="text-amber-300"/>
+                </svg>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">FDM 3D Tech</span>
+                  <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">Точність 0.12 мм</span>
+                </div>
+                <h3 class="text-xs sm:text-sm font-heading font-bold text-white mt-0.5 truncate">Від ідеї до готової моделі</h3>
+                <p class="text-[11px] text-slate-300 leading-snug mt-0.5">Сувеніри, брелоки, підставки та комплектуючі для FPV-дронів.</p>
+              </div>
+            </div>
+
+            <!-- Дві інтерактивні міні-картки -->
+            <div class="grid grid-cols-2 gap-2.5">
+              <div onclick="navigateToCatalog(event)" class="cursor-pointer group p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-sky-400/40 transition-all duration-200">
+                <div class="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-300 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                  <i data-lucide="box" class="w-4 h-4"></i>
+                </div>
+                <div class="text-xs font-bold text-white">Інтерактивне 3D</div>
+                <p class="text-[10px] text-slate-300 mt-0.5 leading-tight">Крутіть моделі на 360° прямо у вітрині</p>
+              </div>
+
+              <div onclick="openCustomOrderModal()" class="cursor-pointer group p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-amber-400/40 transition-all duration-200">
+                <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-300 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                  <i data-lucide="file-box" class="w-4 h-4"></i>
+                </div>
+                <div class="text-xs font-bold text-white">Власний .STL</div>
+                <p class="text-[10px] text-slate-300 mt-0.5 leading-tight">Друк за вашим файлом або іменний напис</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -269,7 +344,7 @@
       <!-- Горизонтальний скрол категорій без зламу на смартфонах -->
       <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1.5 -mx-3 px-3 sm:mx-0 sm:px-0" id="category-pills">
         <button type="button" data-cat="all" onclick="selectCategory('all')" class="cat-pill active px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 shadow-sm shrink-0 transition">
-          Всі вироби (29)
+          Всі вироби
         </button>
         <button type="button" data-cat="Брелоки та аксесуари" onclick="selectCategory('Брелоки та аксесуари')" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200 shrink-0 transition">
           🔑 Брелоки
@@ -322,7 +397,7 @@
 
     <!-- Лічильник результатів -->
     <div class="py-3 flex items-center justify-between text-xs text-slate-500">
-      <div id="results-count" class="flex items-center gap-1"><span class="font-bold text-slate-700">Всі вироби:</span> <strong class="text-blue-600 font-black">29 шт.</strong></div>
+      <div id="results-count" class="flex items-center gap-1"><span class="font-bold text-slate-600">Завантаження актуальної вітрини...</span></div>
       <button id="reset-filters-btn" class="text-blue-600 hover:underline font-bold hidden">
         Скинути
       </button>
@@ -778,7 +853,7 @@
         <!-- Панель керування хмарною базою Firebase (експорт/імпорт/синхронізація) -->
         <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs">
           <div class="flex items-center gap-2 flex-wrap">
-            <span id="admin-total-badge" class="font-bold text-blue-800">29 товарів у базі</span>
+            <span id="admin-total-badge" class="font-bold text-blue-800">Завантаження...</span>
             <span id="firebase-sync-badge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-300">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Firebase Online
             </span>
@@ -794,8 +869,8 @@
               Імпорт JSON
               <input type="file" id="import-json-input" accept=".json" class="hidden" onchange="importProductsJSON(event)">
             </label>
-            <button type="button" onclick="resetToDefaultProducts()" class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 font-bold border border-rose-200 hover:bg-rose-100 transition">
-              Скинути до дефолту
+            <button type="button" onclick="resetToDefaultProducts()" class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-bold border border-emerald-200 hover:bg-emerald-100 transition">
+              🔄 Оновити з хмари
             </button>
           </div>
         </div>
@@ -1817,8 +1892,9 @@
     const LEGACY_DEFAULT_B64_PREFIXES = {"2": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUDBAQE", "4": "iVBORw0KGgoAAAANSUhEUgAAAyAAAAJYCAIAAAAV", "5": "UklGRngNAQBXRUJQVlA4IGwNAQCwlAKdASoEAgQC", "6": "iVBORw0KGgoAAAANSUhEUgAAAyAAAAKACAMAAABT", "7": "UklGRpBNAABXRUJQVlA4IIRNAADQvgGdASoEAgQC", "8": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUDBAQE", "11": "iVBORw0KGgoAAAANSUhEUgAAAyAAAAKHCAIAAAD2", "12": "iVBORw0KGgoAAAANSUhEUgAAAyAAAAJYCAIAAAAV", "13": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUDBAQE", "14": "UklGRjCCAABXRUJQVlA4ICSCAAAQKgKdASogA5oC", "15": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUDBAQE", "16": "UklGRqKAAABXRUJQVlA4IJaAAAAQbgKdASogA1YC", "17": "iVBORw0KGgoAAAANSUhEUgAAAkQAAAH6CAIAAABp", "18": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUDBAQE", "19": "iVBORw0KGgoAAAANSUhEUgAAAyAAAAJYCAIAAAAV", "20": "iVBORw0KGgoAAAANSUhEUgAAA0gAAANICAYAAAD9", "23": "UklGRlApAABXRUJQVlA4IEQpAADwvQCdASoEAgQC", "24": "UklGRqoxAABXRUJQVlA4IJ4xAADQLwGdASoEAgQC", "25": "UklGRg4SAABXRUJQVlA4IAISAABwogCdASoEAgQC", "26": "UklGRtoZAABXRUJQVlA4IM4ZAACwvgCdASoEAuAB", "27": "UklGRqpQAABXRUJQVlA4IJ5QAACQawGdASoEAgQC", "28": "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAUDBAQE"};
 
     const ADMIN_PASSWORD_HASH = "ccca9eb9b8b0cc8fdbcc18270648ff549adbb7c7305c73861eaec9957190b745";
-    const STORAGE_KEY_PRODUCTS = "sal_products_v11_lossless";
+    const STORAGE_KEY_PRODUCTS = "sal_products_v12_cloud_verified";
     const LEGACY_STORAGE_KEY_PRODUCTS = "sal_products_v9_b64";
+    let isInitialCloudSyncPending = true;
     const STORAGE_KEY_CART = "stepan_lyceum_cart";
     const STORAGE_KEY_AUTH = "sal_admin_auth_status";
     const STORAGE_KEY_TG_TOKEN = "sal_tg_bot_token";
@@ -2465,7 +2541,9 @@
     function updateCatalogCounters() {
       const total = products.length;
       const heroText = document.getElementById("hero-catalog-text");
-      if (heroText) heroText.innerText = `Вітрина (${total})`;
+      if (heroText) {
+        heroText.innerText = (isInitialCloudSyncPending && total === 0) ? "Вітрина виробів" : `Вітрина (${total})`;
+      }
       const mobileNavText = document.getElementById("mobile-nav-catalog-text");
       if (mobileNavText) mobileNavText.innerText = "Вітрина";
       const adminTotalBadge = document.getElementById("admin-total-badge");
@@ -2899,6 +2977,13 @@
     let hasCompletedInitialCloudMerge = false;
 
     document.addEventListener("DOMContentLoaded", async () => {
+      // Очищаємо старі кеші з колишніми дефолтними товарами, щоб вони ніколи не з'являлися при завантаженні
+      try {
+        localStorage.removeItem("sal_products_v9_b64");
+        localStorage.removeItem("sal_products_v10_fast");
+        localStorage.removeItem("sal_products_v11_lossless");
+      } catch (e) {}
+
       loadProductsFromStorage();
       loadCategoriesFromStorage();
       renderCategoryPills();
@@ -2910,10 +2995,6 @@
       renderProducts();
       scheduleIconRefresh();
 
-      const cleanedDistorted = await cleanDistortedStlsFromProducts();
-      if (cleanedDistorted) {
-        await saveProductsToStorage(true);
-      }
       initFirebaseRealtimeSync();
     });
 
@@ -3103,14 +3184,21 @@
     }
 
     async function applyCloudProductsSnapshot(val) {
-      if (!val) return false;
+      isInitialCloudSyncPending = false;
+      if (!val) {
+        products = [];
+        renderProducts();
+        renderCategoryPills();
+        if (isAdminAuthenticated) renderAdminProductsTable();
+        return false;
+      }
       if (isCloudSyncInProgress || activeStlUploadsCount > 0 || Date.now() - lastLocalWriteTime < 5000) return false;
       const rawArr = Array.isArray(val) ? val.filter(Boolean) : Object.values(val).filter(Boolean);
-      if (rawArr.length === 0) return false;
 
       const cloudHydrated = hydrateProductsFromCloud(rawArr);
       let needsPushToCloud = false;
 
+      // Зберігаємо лише актуальний список товарів із Firebase (видалені колишні товари ніколи не повертаються!)
       const localMap = new Map();
       if (Array.isArray(products)) {
         products.forEach(lp => {
@@ -3134,17 +3222,7 @@
         }
       }
 
-      if (!hasCompletedInitialCloudMerge && Array.isArray(products)) {
-        const cloudIds = new Set(cloudHydrated.map(p => Number(p.id)));
-        for (const lp of products) {
-          if (lp && lp.id && !cloudIds.has(Number(lp.id)) && Number(lp.id) > 1000) {
-            cloudHydrated.unshift(lp);
-            needsPushToCloud = true;
-          }
-        }
-        hasCompletedInitialCloudMerge = true;
-      }
-
+      hasCompletedInitialCloudMerge = true;
       products = cloudHydrated;
 
       const cleanedDistorted = await cleanDistortedStlsFromProducts();
@@ -3164,16 +3242,33 @@
     }
 
     function initFirebaseRealtimeSync() {
-      firebaseFastRead("products").then(async (val) => {
+      // 0. Швидке первинне читання з подовженим таймаутом 20 с для повільного інтернету
+      firebaseFastRead("products", 20000).then(async (val) => {
         if (val && !isCloudSyncInProgress && activeStlUploadsCount === 0 && Date.now() - lastLocalWriteTime > 5000) {
           await applyCloudProductsSnapshot(val);
           const stlCount = products.filter(p => p && (p.stlUrl || (p.stlChunks && p.stlChunks.length))).length;
           updateFirebaseBadge(true, `Хмара синхронізована (${stlCount} 3D)`);
+        } else if (val === null && isInitialCloudSyncPending) {
+          // Якщо REST не відповів і WebSocket ще підключається, чекаємо на WebSocket або показуємо кеш
+          try {
+            const cached = localStorage.getItem(STORAGE_KEY_PRODUCTS);
+            if (cached) {
+              const parsed = JSON.parse(cached);
+              if (Array.isArray(parsed)) {
+                isInitialCloudSyncPending = false;
+                products = hydrateProductsFromCloud(parsed);
+                renderProducts();
+                renderCategoryPills();
+              }
+            }
+          } catch (e) {}
         }
       });
 
       if (!db) {
+        isInitialCloudSyncPending = false;
         updateFirebaseBadge(false);
+        renderProducts();
         return;
       }
 
@@ -3186,13 +3281,19 @@
       db.ref("products").on("value", (snapshot) => {
         if (isCloudSyncInProgress || activeStlUploadsCount > 0 || Date.now() - lastLocalWriteTime < 5000) return;
         const val = snapshot.val();
+        isInitialCloudSyncPending = false;
         if (val) {
           applyCloudProductsSnapshot(val);
         } else {
-          saveProductsToStorage(true).catch(() => {});
+          products = [];
+          renderProducts();
+          renderCategoryPills();
+          if (isAdminAuthenticated) renderAdminProductsTable();
         }
       }, (err) => {
         console.warn("Firebase products read error:", err);
+        isInitialCloudSyncPending = false;
+        renderProducts();
       });
 
       // 2. Синхронізація категорій (categories) у реальному часі
@@ -3476,25 +3577,21 @@
     }
 
     function loadProductsFromStorage() {
+      // На старті ніколи не завантажуємо старі DEFAULT_PRODUCTS («колишні товари»).
+      // Якщо є свіжий хмарний кеш v12 — показуємо його миттєво, інакше показуємо скелетон завантаження до відповіді Firebase.
       try {
-        let saved = localStorage.getItem(STORAGE_KEY_PRODUCTS);
-        if (!saved && typeof LEGACY_STORAGE_KEY_PRODUCTS !== "undefined") {
-          saved = localStorage.getItem(LEGACY_STORAGE_KEY_PRODUCTS);
-          // Очищаємо старий важкий ключ у localStorage, щоб звільнити квоту браузера
-          try { localStorage.removeItem(LEGACY_STORAGE_KEY_PRODUCTS); } catch (e) {}
-        }
+        const saved = localStorage.getItem(STORAGE_KEY_PRODUCTS);
         if (saved) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed) && parsed.length > 0) {
             products = hydrateProductsFromCloud(parsed);
-            try { localStorage.setItem(STORAGE_KEY_PRODUCTS, JSON.stringify(products)); } catch (e) {}
+            isInitialCloudSyncPending = false;
             return;
           }
         }
-        products = [...DEFAULT_PRODUCTS];
-      } catch (e) {
-        products = [...DEFAULT_PRODUCTS];
-      }
+      } catch (e) {}
+      products = [];
+      isInitialCloudSyncPending = true;
     }
 
     async function saveProductsToStorage(syncCloud = true) {
@@ -3634,6 +3731,31 @@
 
       if (!grid) return;
 
+      // Поки триває первинне завантаження з хмари при повільному інтернеті — показуємо акуратні скелетон-картки замість колишніх товарів
+      if (isInitialCloudSyncPending && products.length === 0) {
+        if (emptyState) emptyState.classList.add("hidden");
+        if (resetBtn) resetBtn.classList.add("hidden");
+        if (resultsCount) {
+          resultsCount.innerHTML = `<span class="inline-flex items-center gap-2 font-semibold text-blue-600"><span class="w-2 h-2 rounded-full bg-blue-600 animate-ping"></span> Завантаження актуального каталогу з хмари...</span>`;
+        }
+        grid.innerHTML = Array.from({ length: 8 }).map(() => `
+          <div class="bg-white rounded-2xl border border-slate-200/80 overflow-hidden p-3 space-y-3">
+            <div class="aspect-square rounded-xl skeleton-shimmer"></div>
+            <div class="space-y-2">
+              <div class="h-3 w-1/3 rounded skeleton-shimmer"></div>
+              <div class="h-4 w-5/6 rounded skeleton-shimmer"></div>
+              <div class="h-7 w-full rounded-lg skeleton-shimmer"></div>
+            </div>
+            <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+              <div class="h-5 w-16 rounded skeleton-shimmer"></div>
+              <div class="h-7 w-20 rounded-xl skeleton-shimmer"></div>
+            </div>
+          </div>
+        `).join('');
+        updateCatalogCounters();
+        return;
+      }
+
       syncPriceSliderBounds();
       updateCatalogCounters();
 
@@ -3675,18 +3797,19 @@
       }
 
       if (emptyState) emptyState.classList.add("hidden");
-      grid.innerHTML = filtered.map(product => {
+      grid.innerHTML = filtered.map((product, idx) => {
         const isFav = wishlist.includes(product.id);
         const badgeColor = product.badgeColor || "bg-blue-600 text-white";
+        const delayMs = Math.min(idx * 25, 200);
 
         return `
-          <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all duration-200 flex flex-col justify-between">
+          <div style="animation-delay: ${delayMs}ms" class="group animate-fade-in-up product-card-hover bg-white rounded-2xl border border-slate-200 overflow-hidden flex flex-col justify-between">
             <div>
               <div class="relative bg-slate-100 aspect-square overflow-hidden cursor-pointer" onclick="openQuickView(${product.id})">
                 <img 
                   src="${product.image}" 
                   alt="${product.title}" 
-                  class="w-full h-full object-cover"
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                   loading="lazy"
                   decoding="async"
                   onerror="this.src='https://placehold.co/400x400/1e293b/ffffff?text=3D+SAL'"
@@ -5534,12 +5657,23 @@
     }
 
     function resetToDefaultProducts() {
-      products = [...DEFAULT_PRODUCTS];
-      saveProductsToStorage();
-      renderProducts();
-      renderCategoryPills();
-      renderAdminProductsTable();
-      showToast("Скинуто до початкового каталогу");
+      openConfirmModal(
+        "Оновлення з хмарної бази",
+        "Завантажити актуальний список товарів із хмари Firebase?",
+        async () => {
+          isInitialCloudSyncPending = true;
+          renderProducts();
+          const val = await firebaseFastRead("products", 20000);
+          if (val) {
+            await applyCloudProductsSnapshot(val);
+            showToast("☁️ Каталог оновлено з хмари Firebase!");
+          } else {
+            isInitialCloudSyncPending = false;
+            renderProducts();
+            showToast("⚠️ Не вдалося з'єднатися з Firebase");
+          }
+        }
+      );
     }
 
     function resetAllFilters() {
