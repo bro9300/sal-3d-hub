@@ -53,7 +53,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/fflate.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/3MFLoader.js"></script>
   
   <script>
@@ -516,7 +516,7 @@
           <input 
             type="file" 
             id="customer-stl-file" 
-            accept=".stl,.obj,.3mf,.step,.stp"
+            accept=".stl,.obj,.3mf,.step,.stp,model/stl,model/3mf,application/vnd.ms-package.3dmanufacturing-3dmodel+xml,application/zip,application/octet-stream"
             onchange="handleCustomerStlFileSelect(event)"
             class="w-full text-xs text-slate-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
           >
@@ -1136,7 +1136,7 @@
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
                   <label class="block text-[10px] font-bold text-slate-700 mb-0.5">3D-модель (.STL або .3MF файл з пристрою):</label>
-                  <input type="file" id="new-stl-file" accept=".stl,.3mf" onchange="handleAdminStlFileSelect(event)" class="w-full text-[10px] text-slate-500 file:mr-1.5 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:font-bold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 cursor-pointer">
+                  <input type="file" id="new-stl-file" onchange="handleAdminStlFileSelect(event)" class="w-full text-[10px] text-slate-500 file:mr-1.5 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:font-bold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 cursor-pointer">
                 </div>
                 <div>
                   <label class="block text-[10px] font-bold text-slate-700 mb-0.5">Резервна 3D-форма (якщо без .STL / .3MF):</label>
@@ -1893,6 +1893,7 @@
     let pendingAdminStlBuffer = null;
     let pendingAdminStlDataUrl = null;
     let pendingAdminStlFileName = "";
+    let pendingAdminStlPromise = null;
     let pendingCustomerStlFile = null;
     let pendingCustomerStlDataUrl = null;
 
@@ -2099,7 +2100,10 @@
     async function compressBufferToCloudStlDataUrl(arrayBuffer, mimeHint = "stl") {
       if (!arrayBuffer) return null;
       const is3mf = mimeHint === "3mf" || is3mfArrayBuffer(arrayBuffer);
-      const effectiveHint = is3mf ? "3mf" : mimeHint;
+      // .3MF вже є ZIP-архівом (DEFLATE), тому повторне gzip-стиснення не потрібне
+      if (is3mf) {
+        return "data:model/3mf;base64," + arrayBufferToBase64(arrayBuffer);
+      }
       if (typeof CompressionStream !== "undefined") {
         try {
           const cs = new CompressionStream("gzip");
@@ -2108,14 +2112,13 @@
           writer.close();
           const gzBuf = await new Response(cs.readable).arrayBuffer();
           if (gzBuf.byteLength < arrayBuffer.byteLength) {
-            return `data:application/x-gzip-${effectiveHint};base64,` + arrayBufferToBase64(gzBuf);
+            return `data:application/x-gzip-${mimeHint};base64,` + arrayBufferToBase64(gzBuf);
           }
         } catch (e) {
           console.warn("Gzip compression fallback:", e);
         }
       }
-      const rawMime = is3mf ? "model/3mf" : "application/sla";
-      return `data:${rawMime};base64,` + arrayBufferToBase64(arrayBuffer);
+      return "data:application/sla;base64," + arrayBufferToBase64(arrayBuffer);
     }
 
     // Розпакування data: URL (підтримує як Gzip `data:application/x-gzip-...`, так і звичайний `data:application/sla;base64,...`)
@@ -2519,6 +2522,163 @@
       return null;
     }
 
+    // Надійний резервний парсер 3MF на базі fflate + DOMParser
+    // Підтримує стандартні .3mf та багатофайлові .3mf із Bambu Studio / OrcaSlicer / PrusaSlicer (3D/Objects/*.model)
+    function parse3mfFallbackToGroup(arrayBuffer, defaultMaterial) {
+      if (typeof fflate === "undefined" || typeof fflate.unzipSync !== "function") {
+        throw new Error("fflate не завантажено");
+      }
+      const zipEntries = fflate.unzipSync(new Uint8Array(arrayBuffer));
+      const modelPaths = Object.keys(zipEntries).filter(k => k.toLowerCase().endsWith(".model"));
+      if (modelPaths.length === 0) {
+        throw new Error("У .3mf архіві не знайдено .model файлів");
+      }
+
+      const parser = new DOMParser();
+      const normalizePath = (p) => String(p || "").replace(/^\/+/, "").toLowerCase();
+
+      const parseTransform = (str) => {
+        if (!str) return null;
+        const n = str.trim().split(/\s+/).map(Number);
+        if (n.length !== 12 || n.some(Number.isNaN)) return null;
+        const m = new THREE.Matrix4();
+        m.set(
+          n[0], n[3], n[6], n[9],
+          n[1], n[4], n[7], n[10],
+          n[2], n[5], n[8], n[11],
+          0,    0,    0,    1
+        );
+        return m;
+      };
+
+      // Збираємо всі об'єкти з усіх .model файлів (ключ: normalizedPath + "#" + id)
+      const objectsByKey = new Map();
+      const objectsByIdOnly = new Map();
+      const buildItems = [];
+
+      for (const mp of modelPaths) {
+        const xmlText = fflate.strFromU8(zipEntries[mp]);
+        const doc = parser.parseFromString(xmlText, "application/xml");
+        const normMp = normalizePath(mp);
+
+        const objNodes = doc.getElementsByTagName("object");
+        for (let i = 0; i < objNodes.length; i++) {
+          const objNode = objNodes[i];
+          const id = objNode.getAttribute("id");
+          if (!id) continue;
+
+          const meshNodes = objNode.getElementsByTagName("mesh");
+          let geometry = null;
+          if (meshNodes.length > 0) {
+            const meshNode = meshNodes[0];
+            const vNodes = meshNode.getElementsByTagName("vertex");
+            const tNodes = meshNode.getElementsByTagName("triangle");
+            if (vNodes.length > 0 && tNodes.length > 0) {
+              const verts = new Float32Array(vNodes.length * 3);
+              for (let vi = 0; vi < vNodes.length; vi++) {
+                verts[vi * 3] = parseFloat(vNodes[vi].getAttribute("x")) || 0;
+                verts[vi * 3 + 1] = parseFloat(vNodes[vi].getAttribute("y")) || 0;
+                verts[vi * 3 + 2] = parseFloat(vNodes[vi].getAttribute("z")) || 0;
+              }
+              const pos = new Float32Array(tNodes.length * 9);
+              let ptr = 0;
+              for (let ti = 0; ti < tNodes.length; ti++) {
+                const v1 = parseInt(tNodes[ti].getAttribute("v1"), 10) * 3;
+                const v2 = parseInt(tNodes[ti].getAttribute("v2"), 10) * 3;
+                const v3 = parseInt(tNodes[ti].getAttribute("v3"), 10) * 3;
+                if (v1 >= 0 && v2 >= 0 && v3 >= 0 && v1 + 2 < verts.length && v2 + 2 < verts.length && v3 + 2 < verts.length) {
+                  pos[ptr++] = verts[v1]; pos[ptr++] = verts[v1 + 1]; pos[ptr++] = verts[v1 + 2];
+                  pos[ptr++] = verts[v2]; pos[ptr++] = verts[v2 + 1]; pos[ptr++] = verts[v2 + 2];
+                  pos[ptr++] = verts[v3]; pos[ptr++] = verts[v3 + 1]; pos[ptr++] = verts[v3 + 2];
+                }
+              }
+              if (ptr > 0) {
+                geometry = new THREE.BufferGeometry();
+                geometry.setAttribute("position", new THREE.BufferAttribute(pos.subarray(0, ptr), 3));
+              }
+            }
+          }
+
+          const compNodes = objNode.getElementsByTagName("component");
+          const components = [];
+          for (let ci = 0; ci < compNodes.length; ci++) {
+            const c = compNodes[ci];
+            const refPath = c.getAttribute("p:path") || c.getAttributeNS("http://schemas.microsoft.com/3dmanufacturing/production/2015/06", "path") || "";
+            components.push({
+              objectid: c.getAttribute("objectid"),
+              path: refPath ? normalizePath(refPath) : normMp,
+              transform: parseTransform(c.getAttribute("transform"))
+            });
+          }
+
+          const rec = { id, path: normMp, geometry, components };
+          objectsByKey.set(`${normMp}#${id}`, rec);
+          if (!objectsByIdOnly.has(id)) objectsByIdOnly.set(id, rec);
+        }
+
+        const buildNodes = doc.getElementsByTagName("build");
+        if (buildNodes.length > 0) {
+          const itemNodes = buildNodes[0].getElementsByTagName("item");
+          for (let bi = 0; bi < itemNodes.length; bi++) {
+            const it = itemNodes[bi];
+            const refPath = it.getAttribute("p:path") || it.getAttributeNS("http://schemas.microsoft.com/3dmanufacturing/production/2015/06", "path") || "";
+            buildItems.push({
+              objectid: it.getAttribute("objectid"),
+              path: refPath ? normalizePath(refPath) : normMp,
+              transform: parseTransform(it.getAttribute("transform"))
+            });
+          }
+        }
+      }
+
+      const rootGroup = new THREE.Group();
+
+      const buildObjectNode = (pathKey, objId, depth = 0) => {
+        if (depth > 16) return null;
+        const rec = objectsByKey.get(`${pathKey}#${objId}`) || objectsByIdOnly.get(objId);
+        if (!rec) return null;
+        const g = new THREE.Group();
+        if (rec.geometry) {
+          const geomClone = rec.geometry.clone();
+          computeSmoothCreaseNormals(geomClone, 38);
+          g.add(new THREE.Mesh(geomClone, defaultMaterial));
+        }
+        for (const comp of rec.components) {
+          const child = buildObjectNode(comp.path, comp.objectid, depth + 1);
+          if (child) {
+            if (comp.transform) child.applyMatrix4(comp.transform);
+            g.add(child);
+          }
+        }
+        return g;
+      };
+
+      if (buildItems.length > 0) {
+        for (const item of buildItems) {
+          const node = buildObjectNode(item.path, item.objectid, 0);
+          if (node) {
+            if (item.transform) node.applyMatrix4(item.transform);
+            rootGroup.add(node);
+          }
+        }
+      }
+
+      // Якщо <build> порожній або не дав мешів — додаємо всі знайдені меші напряму
+      let hasAnyMesh = false;
+      rootGroup.traverse(c => { if (c.isMesh) hasAnyMesh = true; });
+      if (!hasAnyMesh) {
+        for (const rec of objectsByKey.values()) {
+          if (rec.geometry) {
+            const geomClone = rec.geometry.clone();
+            computeSmoothCreaseNormals(geomClone, 38);
+            rootGroup.add(new THREE.Mesh(geomClone, defaultMaterial));
+          }
+        }
+      }
+
+      return rootGroup;
+    }
+
     async function initStlViewer(containerId, initialColorName, demoShape = 'cylinder', stlUrl = null, productId = null) {
       const container = document.getElementById(containerId);
       if (!container) return;
@@ -2623,14 +2783,29 @@
           if (resolved && resolved.buffer) {
             const modelFormat = detectModelFormat(resolved.buffer, resolved.fileName || stlUrl);
 
-            if (modelFormat === "3mf" && typeof THREE.ThreeMFLoader !== 'undefined') {
-              const loader3mf = new THREE.ThreeMFLoader();
-              const group = loader3mf.parse(resolved.buffer);
+            if (modelFormat === "3mf") {
+              let group = null;
+              let meshCount = 0;
+              if (typeof THREE.ThreeMFLoader !== 'undefined') {
+                try {
+                  const loader3mf = new THREE.ThreeMFLoader();
+                  const parsedGroup = loader3mf.parse(resolved.buffer);
+                  let found = 0;
+                  parsedGroup.traverse((c) => { if (c.isMesh) found++; });
+                  if (found > 0) {
+                    group = parsedGroup;
+                  }
+                } catch (loader3mfErr) {
+                  console.warn("ThreeMFLoader fallback to built-in 3MF parser:", loader3mfErr);
+                }
+              }
+              if (!group) {
+                group = parse3mfFallbackToGroup(resolved.buffer, material);
+              }
               // 3MF використовує Z-up; повертаємо модель на -90° по осі X під Y-up сцену Three.js
               group.rotation.x = -Math.PI / 2;
               group.updateMatrixWorld(true);
 
-              let meshCount = 0;
               group.traverse((child) => {
                 if (child.isMesh) {
                   meshCount++;
@@ -5541,6 +5716,15 @@
         pendingAdminStlFileName = "";
         return;
       }
+      const lowerName = (file.name || "").toLowerCase();
+      // Очищаємо попереднє посилання Google Drive / стару модель, щоб новий локальний файл мав пріоритет
+      pendingAdminGdriveRef = "";
+      pendingAdminStlBuffer = null;
+      pendingAdminStlDataUrl = null;
+      pendingAdminStlFileName = "";
+      const gdInputExisting = document.getElementById("new-stl-gdrive-url");
+      if (gdInputExisting) gdInputExisting.value = "";
+
       editingRemoveStl = false;
       const origKb = Math.round(file.size / 1024);
       if (bar && txt) {
@@ -5548,47 +5732,65 @@
         txt.innerText = `⏳ Підготовка High-Poly ${file.name} (${origKb} КБ)...`;
         bar.classList.remove("hidden");
       }
-      try {
-        const rawBuf = await file.arrayBuffer();
-        const is3mf = file.name.toLowerCase().endsWith(".3mf") || is3mfArrayBuffer(rawBuf);
-        const losslessBuf = is3mf ? rawBuf : ensureLosslessBinaryStl(rawBuf);
-        pendingAdminStlBuffer = losslessBuf;
-        pendingAdminStlFileName = file.name;
 
-        // Якщо підключено Google Apps Script — одразу вивантажуємо оригінальний високополігональний файл на Google Диск!
-        if (gdriveScriptUrl && gdriveScriptUrl.startsWith("https://script.google.com/")) {
-          if (bar && txt) {
-            txt.innerText = `☁️ Вивантаження ${file.name} (${origKb} КБ) на Google Диск...`;
+      const workPromise = (async () => {
+        try {
+          const rawBuf = await file.arrayBuffer();
+          const is3mf = lowerName.endsWith(".3mf") || is3mfArrayBuffer(rawBuf);
+          const isStl = lowerName.endsWith(".stl");
+          if (!is3mf && !isStl) {
+            showToast("⚠️ Підтримуються лише файли форматів .STL та .3MF");
+            if (e.target) e.target.value = "";
+            if (bar) bar.classList.add("hidden");
+            return;
           }
-          try {
-            const gdRes = await uploadStlBufferToGoogleDrive(losslessBuf, file.name);
-            if (gdRes && gdRes.fileId) {
-              pendingAdminGdriveRef = `gdrive://${gdRes.fileId}`;
-              pendingAdminStlDataUrl = pendingAdminGdriveRef;
-              const gdInput = document.getElementById("new-stl-gdrive-url");
-              if (gdInput) gdInput.value = gdRes.viewUrl || `https://drive.google.com/file/d/${gdRes.fileId}/view`;
-              if (bar && txt) {
-                bar.className = "flex items-center justify-between gap-1 bg-emerald-50 border border-emerald-300 rounded-md px-2 py-1 text-[10px] text-emerald-900";
-                txt.innerText = `✅ На Google Диску: ${file.name} (${origKb} КБ, ${is3mf ? '3MF' : 'High-Poly STL'})`;
-              }
-              showToast(`☁️ Файл «${file.name}» збережено на ваш Google Диск!`);
-              return;
+          const losslessBuf = is3mf ? rawBuf : ensureLosslessBinaryStl(rawBuf);
+          pendingAdminStlBuffer = losslessBuf;
+          pendingAdminStlFileName = file.name;
+
+          // Якщо підключено Google Apps Script — одразу вивантажуємо оригінальний високополігональний файл на Google Диск!
+          if (gdriveScriptUrl && gdriveScriptUrl.startsWith("https://script.google.com/")) {
+            if (bar && txt) {
+              txt.innerText = `☁️ Вивантаження ${file.name} (${origKb} КБ) на Google Диск...`;
             }
-          } catch (gdErr) {
-            console.warn("Google Drive auto-upload fallback to Firebase Gzip:", gdErr);
+            try {
+              const gdRes = await uploadStlBufferToGoogleDrive(losslessBuf, file.name);
+              if (gdRes && gdRes.fileId) {
+                pendingAdminGdriveRef = `gdrive://${gdRes.fileId}`;
+                pendingAdminStlDataUrl = pendingAdminGdriveRef;
+                const gdInput = document.getElementById("new-stl-gdrive-url");
+                if (gdInput) gdInput.value = gdRes.viewUrl || `https://drive.google.com/file/d/${gdRes.fileId}/view`;
+                if (bar && txt) {
+                  bar.className = "flex items-center justify-between gap-1 bg-emerald-50 border border-emerald-300 rounded-md px-2 py-1 text-[10px] text-emerald-900";
+                  txt.innerText = `✅ На Google Диску: ${file.name} (${origKb} КБ, ${is3mf ? '3MF' : 'High-Poly STL'})`;
+                }
+                showToast(`☁️ Файл «${file.name}» збережено на ваш Google Диск!`);
+                return;
+              }
+            } catch (gdErr) {
+              console.warn("Google Drive auto-upload fallback to Firebase:", gdErr);
+            }
+          }
+
+          const compressedDataUrl = await compressBufferToCloudStlDataUrl(losslessBuf, is3mf ? "3mf" : "stl");
+          pendingAdminStlDataUrl = compressedDataUrl;
+          const cloudKb = compressedDataUrl ? Math.round(compressedDataUrl.length / 1024) : Math.round(losslessBuf.byteLength / 1024);
+          if (bar && txt) {
+            bar.className = "flex items-center justify-between gap-1 bg-emerald-50 border border-emerald-300 rounded-md px-2 py-1 text-[10px] text-emerald-900";
+            txt.innerText = `✅ ${file.name} (${origKb} КБ → ${cloudKb} КБ, ${is3mf ? '3MF' : 'Gzip STL'} 100% без втрат)`;
+          }
+        } catch (err) {
+          console.warn("Admin 3D file read error:", err);
+          showToast("Помилка читання 3D-файлу (.STL / .3MF)");
+        } finally {
+          if (pendingAdminStlPromise === workPromise) {
+            pendingAdminStlPromise = null;
           }
         }
+      })();
 
-        const compressedDataUrl = await compressBufferToCloudStlDataUrl(losslessBuf, is3mf ? "3mf" : "stl");
-        pendingAdminStlDataUrl = compressedDataUrl;
-        const cloudKb = compressedDataUrl ? Math.round(compressedDataUrl.length / 1024) : Math.round(losslessBuf.byteLength / 1024);
-        if (bar && txt) {
-          txt.innerText = `✅ ${file.name} (${origKb} КБ → ${cloudKb} КБ, ${is3mf ? '3MF' : 'Gzip STL'} 100% без втрат)`;
-        }
-      } catch (err) {
-        console.warn("Admin 3D file read error:", err);
-        showToast("Помилка читання 3D-файлу (.STL / .3MF)");
-      }
+      pendingAdminStlPromise = workPromise;
+      await workPromise;
     }
 
     function openStandaloneStlPreviewModal(titleText = "Перевірка 3D-моделі (.STL / .3MF)") {
@@ -5625,6 +5827,9 @@
     }
 
     async function previewAdminFormStl() {
+      if (pendingAdminStlPromise) {
+        await pendingAdminStlPromise;
+      }
       if (pendingAdminStlBuffer) {
         openStandaloneStlPreviewModal(pendingAdminStlFileName || "Нова 3D-модель (High-Poly)");
         return;
@@ -5976,6 +6181,9 @@
 
     async function handleAddNewProduct(e) {
       e.preventDefault();
+      if (pendingAdminStlPromise) {
+        await pendingAdminStlPromise;
+      }
       const stlFileInput = document.getElementById("new-stl-file");
       const gdriveUrlInput = document.getElementById("new-stl-gdrive-url");
       const rawGdriveVal = gdriveUrlInput ? gdriveUrlInput.value.trim() : "";
@@ -5987,7 +6195,12 @@
 
       if (parsedGdriveId) {
         uploadedStlDataUrl = `gdrive://${parsedGdriveId}`;
-        if (!uploadedStlName) uploadedStlName = `gdrive_${parsedGdriveId.slice(0, 8)}.stl`;
+        if (!uploadedStlName) {
+          const is3mfBuf = is3mfArrayBuffer(uploadedStlBuffer);
+          uploadedStlName = `gdrive_${parsedGdriveId.slice(0, 8)}.${is3mfBuf ? "3mf" : "stl"}`;
+        }
+      } else if (uploadedStlBuffer && uploadedStlDataUrl) {
+        // Локально обраний .STL / .3MF файл має пріоритет над старим URL
       } else if (rawGdriveVal && (rawGdriveVal.startsWith("http") || rawGdriveVal.toLowerCase().endsWith(".stl") || rawGdriveVal.toLowerCase().endsWith(".3mf"))) {
         uploadedStlDataUrl = rawGdriveVal;
         if (!uploadedStlName) uploadedStlName = rawGdriveVal.split("/").pop() || (is3mfFileName(rawGdriveVal) ? "model.3mf" : "model.stl");
@@ -6056,7 +6269,7 @@
             if (uploadedStlDataUrl) {
               finalStlUrl = uploadedStlDataUrl;
               finalStlChunks = null;
-              finalStlFileName = uploadedStlName || existing.stlFileName || `model_${pid}.stl`;
+              finalStlFileName = uploadedStlName || existing.stlFileName || `model_${pid}.${is3mfArrayBuffer(uploadedStlBuffer) ? "3mf" : "stl"}`;
               stlRemovedFlag = false;
               existing.hasLegacyLowPolyStl = false;
               if (uploadedStlBuffer) {
@@ -6130,7 +6343,7 @@
 
         if (uploadedStlDataUrl) {
           newStlUrl = uploadedStlDataUrl;
-          newStlFileName = uploadedStlName || `model_${newPid}.stl`;
+          newStlFileName = uploadedStlName || `model_${newPid}.${is3mfArrayBuffer(uploadedStlBuffer) ? "3mf" : "stl"}`;
           if (uploadedStlBuffer) {
             await saveStlRecordToIdb(STL_IDB_STORE_PRODUCTS, newPid, {
               buffer: uploadedStlBuffer,
