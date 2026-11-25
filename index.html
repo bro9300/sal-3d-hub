@@ -2299,6 +2299,11 @@
     // але зберігає чіткі технічні ребра там, де кут між гранями перевищує 38 градусів!
     function computeSmoothCreaseNormals(geometry, creaseAngleDeg = 38) {
       if (!geometry || !geometry.attributes || !geometry.attributes.position) return;
+      // Індексована геометрія (наприклад, із 3MFLoader) потребує стандартного computeVertexNormals()
+      if (geometry.index) {
+        geometry.computeVertexNormals();
+        return;
+      }
       const posAttr = geometry.attributes.position;
       const vertexCount = posAttr.count;
       if (vertexCount < 3 || vertexCount > 900000) {
@@ -2522,20 +2527,88 @@
       return null;
     }
 
-    // Надійний резервний парсер 3MF на базі fflate + DOMParser
-    // Підтримує стандартні .3mf та багатофайлові .3mf із Bambu Studio / OrcaSlicer / PrusaSlicer (3D/Objects/*.model)
-    function parse3mfFallbackToGroup(arrayBuffer, defaultMaterial) {
-      if (typeof fflate === "undefined" || typeof fflate.unzipSync !== "function") {
-        throw new Error("fflate не завантажено");
+    // Універсальне розпакування ZIP-архіву (.3MF): спочатку fflate, а якщо CDN не завантажився — нативний DecompressionStream("deflate-raw")
+    async function unzip3mfEntriesAsync(arrayBuffer) {
+      if (typeof fflate !== "undefined" && typeof fflate.unzipSync === "function") {
+        return fflate.unzipSync(new Uint8Array(arrayBuffer));
       }
-      const zipEntries = fflate.unzipSync(new Uint8Array(arrayBuffer));
+      // Вбудований ZIP-розпакувальник (підтримує Store=0 та Deflate=8 через DecompressionStream)
+      const bytes = new Uint8Array(arrayBuffer);
+      const dv = new DataView(arrayBuffer);
+      // Шукаємо End of Central Directory (EOCD: 0x06054b50)
+      let eocdOffset = -1;
+      for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 65558); i--) {
+        if (dv.getUint32(i, true) === 0x06054b50) {
+          eocdOffset = i;
+          break;
+        }
+      }
+      if (eocdOffset < 0) throw new Error("Некоректний ZIP/3MF архів");
+      const cdOffset = dv.getUint32(eocdOffset + 16, true);
+      const totalEntries = dv.getUint16(eocdOffset + 10, true);
+      const decoder = new TextDecoder("utf-8");
+      const entries = {};
+      let ptr = cdOffset;
+      for (let e = 0; e < totalEntries; e++) {
+        if (ptr + 46 > bytes.length || dv.getUint32(ptr, true) !== 0x02014b50) break;
+        const compMethod = dv.getUint16(ptr + 10, true);
+        const compSize = dv.getUint32(ptr + 20, true);
+        const nameLen = dv.getUint16(ptr + 28, true);
+        const extraLen = dv.getUint16(ptr + 30, true);
+        const commentLen = dv.getUint16(ptr + 32, true);
+        const localHeaderOffset = dv.getUint32(ptr + 42, true);
+        const fileName = decoder.decode(bytes.subarray(ptr + 46, ptr + 46 + nameLen));
+        ptr += 46 + nameLen + extraLen + commentLen;
+
+        if (!fileName.toLowerCase().endsWith(".model")) continue;
+        if (localHeaderOffset + 30 > bytes.length) continue;
+        const lhNameLen = dv.getUint16(localHeaderOffset + 26, true);
+        const lhExtraLen = dv.getUint16(localHeaderOffset + 28, true);
+        const dataStart = localHeaderOffset + 30 + lhNameLen + lhExtraLen;
+        const compData = bytes.subarray(dataStart, dataStart + compSize);
+
+        if (compMethod === 0) {
+          entries[fileName] = compData;
+        } else if (compMethod === 8 && typeof DecompressionStream !== "undefined") {
+          const ds = new DecompressionStream("deflate-raw");
+          const writer = ds.writable.getWriter();
+          writer.write(compData);
+          writer.close();
+          const outBuf = await new Response(ds.readable).arrayBuffer();
+          entries[fileName] = new Uint8Array(outBuf);
+        }
+      }
+      return entries;
+    }
+
+    // Надійний резервний парсер 3MF на базі fflate / нативного ZIP + DOMParser
+    // Підтримує стандартні .3mf та багатофайлові .3mf із Bambu Studio / OrcaSlicer / PrusaSlicer (3D/Objects/*.model)
+    async function parse3mfFallbackToGroup(arrayBuffer, defaultMaterial) {
+      const zipEntries = await unzip3mfEntriesAsync(arrayBuffer);
       const modelPaths = Object.keys(zipEntries).filter(k => k.toLowerCase().endsWith(".model"));
       if (modelPaths.length === 0) {
         throw new Error("У .3mf архіві не знайдено .model файлів");
       }
 
       const parser = new DOMParser();
+      const textDecoder = new TextDecoder("utf-8");
       const normalizePath = (p) => String(p || "").replace(/^\/+/, "").toLowerCase();
+      const getByTag = (root, tag) => {
+        const nsList = root.getElementsByTagNameNS ? root.getElementsByTagNameNS("*", tag) : null;
+        return (nsList && nsList.length > 0) ? nsList : root.getElementsByTagName(tag);
+      };
+      const getPathAttr = (el) => {
+        if (!el) return "";
+        const direct = el.getAttribute("p:path") || el.getAttribute("path");
+        if (direct) return direct;
+        if (el.attributes) {
+          for (let i = 0; i < el.attributes.length; i++) {
+            const a = el.attributes[i];
+            if (a.localName === "path" || a.name.endsWith(":path")) return a.value;
+          }
+        }
+        return "";
+      };
 
       const parseTransform = (str) => {
         if (!str) return null;
@@ -2551,28 +2624,28 @@
         return m;
       };
 
-      // Збираємо всі об'єкти з усіх .model файлів (ключ: normalizedPath + "#" + id)
       const objectsByKey = new Map();
       const objectsByIdOnly = new Map();
       const buildItems = [];
 
       for (const mp of modelPaths) {
-        const xmlText = fflate.strFromU8(zipEntries[mp]);
+        const rawEntry = zipEntries[mp];
+        const xmlText = (typeof fflate !== "undefined" && fflate.strFromU8) ? fflate.strFromU8(rawEntry) : textDecoder.decode(rawEntry);
         const doc = parser.parseFromString(xmlText, "application/xml");
         const normMp = normalizePath(mp);
 
-        const objNodes = doc.getElementsByTagName("object");
+        const objNodes = getByTag(doc, "object");
         for (let i = 0; i < objNodes.length; i++) {
           const objNode = objNodes[i];
           const id = objNode.getAttribute("id");
           if (!id) continue;
 
-          const meshNodes = objNode.getElementsByTagName("mesh");
+          const meshNodes = getByTag(objNode, "mesh");
           let geometry = null;
           if (meshNodes.length > 0) {
             const meshNode = meshNodes[0];
-            const vNodes = meshNode.getElementsByTagName("vertex");
-            const tNodes = meshNode.getElementsByTagName("triangle");
+            const vNodes = getByTag(meshNode, "vertex");
+            const tNodes = getByTag(meshNode, "triangle");
             if (vNodes.length > 0 && tNodes.length > 0) {
               const verts = new Float32Array(vNodes.length * 3);
               for (let vi = 0; vi < vNodes.length; vi++) {
@@ -2599,11 +2672,11 @@
             }
           }
 
-          const compNodes = objNode.getElementsByTagName("component");
+          const compNodes = getByTag(objNode, "component");
           const components = [];
           for (let ci = 0; ci < compNodes.length; ci++) {
             const c = compNodes[ci];
-            const refPath = c.getAttribute("p:path") || c.getAttributeNS("http://schemas.microsoft.com/3dmanufacturing/production/2015/06", "path") || "";
+            const refPath = getPathAttr(c);
             components.push({
               objectid: c.getAttribute("objectid"),
               path: refPath ? normalizePath(refPath) : normMp,
@@ -2616,12 +2689,12 @@
           if (!objectsByIdOnly.has(id)) objectsByIdOnly.set(id, rec);
         }
 
-        const buildNodes = doc.getElementsByTagName("build");
+        const buildNodes = getByTag(doc, "build");
         if (buildNodes.length > 0) {
-          const itemNodes = buildNodes[0].getElementsByTagName("item");
+          const itemNodes = getByTag(buildNodes[0], "item");
           for (let bi = 0; bi < itemNodes.length; bi++) {
             const it = itemNodes[bi];
-            const refPath = it.getAttribute("p:path") || it.getAttributeNS("http://schemas.microsoft.com/3dmanufacturing/production/2015/06", "path") || "";
+            const refPath = getPathAttr(it);
             buildItems.push({
               objectid: it.getAttribute("objectid"),
               path: refPath ? normalizePath(refPath) : normMp,
@@ -2722,7 +2795,8 @@
       const material = new THREE.MeshStandardMaterial({
         color: hex,
         roughness: 0.35,
-        metalness: 0.1
+        metalness: 0.1,
+        side: THREE.DoubleSide
       });
 
       function createDefaultShape() {
@@ -2784,47 +2858,75 @@
             const modelFormat = detectModelFormat(resolved.buffer, resolved.fileName || stlUrl);
 
             if (modelFormat === "3mf") {
+              const countValidVertices = (obj) => {
+                let total = 0;
+                if (!obj) return 0;
+                obj.traverse((c) => {
+                  if (c.isMesh && c.geometry && c.geometry.attributes && c.geometry.attributes.position) {
+                    total += c.geometry.attributes.position.count || 0;
+                  }
+                });
+                return total;
+              };
+
               let group = null;
-              let meshCount = 0;
               if (typeof THREE.ThreeMFLoader !== 'undefined') {
                 try {
                   const loader3mf = new THREE.ThreeMFLoader();
                   const parsedGroup = loader3mf.parse(resolved.buffer);
-                  let found = 0;
-                  parsedGroup.traverse((c) => { if (c.isMesh) found++; });
-                  if (found > 0) {
-                    group = parsedGroup;
+                  if (countValidVertices(parsedGroup) >= 3) {
+                    const testBox = new THREE.Box3().setFromObject(parsedGroup);
+                    const testSize = new THREE.Vector3();
+                    testBox.getSize(testSize);
+                    const testMax = Math.max(testSize.x, testSize.y, testSize.z);
+                    if (!testBox.isEmpty() && isFinite(testMax) && testMax > 0) {
+                      group = parsedGroup;
+                    }
                   }
                 } catch (loader3mfErr) {
                   console.warn("ThreeMFLoader fallback to built-in 3MF parser:", loader3mfErr);
                 }
               }
               if (!group) {
-                group = parse3mfFallbackToGroup(resolved.buffer, material);
+                group = await parse3mfFallbackToGroup(resolved.buffer, material);
               }
               // 3MF використовує Z-up; повертаємо модель на -90° по осі X під Y-up сцену Three.js
               group.rotation.x = -Math.PI / 2;
               group.updateMatrixWorld(true);
 
+              let meshCount = 0;
               group.traverse((child) => {
-                if (child.isMesh) {
+                if (child.isMesh && child.geometry && child.geometry.attributes && child.geometry.attributes.position && child.geometry.attributes.position.count >= 3) {
                   meshCount++;
-                  if (child.geometry && !child.geometry.attributes.normal) {
+                  child.visible = true;
+                  if (child.geometry.index) {
+                    child.geometry.computeVertexNormals();
+                  } else if (!child.geometry.attributes.normal) {
                     computeSmoothCreaseNormals(child.geometry, 38);
                   }
+                  child.geometry.computeBoundingBox();
+                  child.geometry.computeBoundingSphere();
                   const mat = child.material;
-                  const hasVertexColors = Boolean(child.geometry && child.geometry.attributes && child.geometry.attributes.color);
-                  const hasCustomMatColor = Boolean(
-                    mat && !Array.isArray(mat) && mat.color &&
-                    mat.color.getHex() !== 0xffffff && mat.color.getHex() !== 0xaaaaaa
+                  const hasVertexColors = Boolean(child.geometry.attributes.color && child.geometry.attributes.color.count >= 3);
+                  const hasSafeCustomMat = Boolean(
+                    mat && !Array.isArray(mat) && mat.color && !mat.map &&
+                    (mat.opacity === undefined || mat.opacity > 0.2) &&
+                    mat.color.getHex() !== 0xffffff && mat.color.getHex() !== 0xaaaaaa && mat.color.getHex() !== 0x000000
                   );
-                  if (hasVertexColors || hasCustomMatColor) {
-                    if (Array.isArray(mat)) {
-                      mat.forEach(m => { if (m) { m.roughness = 0.35; m.metalness = 0.1; } });
-                    } else if (mat) {
-                      mat.roughness = 0.35;
-                      mat.metalness = 0.1;
-                    }
+                  if (hasVertexColors) {
+                    child.material = new THREE.MeshStandardMaterial({
+                      vertexColors: true,
+                      roughness: 0.35,
+                      metalness: 0.1,
+                      side: THREE.DoubleSide
+                    });
+                  } else if (hasSafeCustomMat) {
+                    child.material = new THREE.MeshStandardMaterial({
+                      color: mat.color.getHex(),
+                      roughness: 0.35,
+                      metalness: 0.1,
+                      side: THREE.DoubleSide
+                    });
                   } else {
                     child.material = material;
                   }
@@ -2840,7 +2942,10 @@
               const center = new THREE.Vector3();
               box.getSize(size);
               box.getCenter(center);
-              const maxDim = Math.max(size.x, size.y, size.z) || 1;
+              const maxDim = Math.max(size.x, size.y, size.z);
+              if (box.isEmpty() || !isFinite(maxDim) || maxDim <= 0) {
+                throw new Error("Некоректні габарити 3MF-моделі");
+              }
               const scale = 26 / maxDim;
 
               const wrapper = new THREE.Group();
@@ -2881,12 +2986,12 @@
             }
           } else {
             createDefaultShape();
-            if (hintEl) hintEl.innerText = "🔄 Обертайте пальцем";
+            if (hintEl) hintEl.innerText = "⚠️ Не вдалося завантажити 3D-файл (перевірте доступ Google Диску)";
           }
         } catch (err) {
           console.warn("Помилка розбору 3D-моделі (.STL/.3MF), показано базову форму:", err);
           if (stlScene) createDefaultShape();
-          if (hintEl) hintEl.innerText = "🔄 Обертайте пальцем";
+          if (hintEl) hintEl.innerText = "⚠️ Помилка 3D-перегляду (показано базову форму)";
         }
       } else {
         createDefaultShape();
