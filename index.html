@@ -49,10 +49,12 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <!-- Three.js Core, OrbitControls & STLLoader -->
+  <!-- Three.js Core, OrbitControls, STLLoader, fflate & 3MFLoader -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/fflate.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/3MFLoader.js"></script>
   
   <script>
     tailwind.config = {
@@ -269,7 +271,7 @@
           </h1>
           
           <p class="text-slate-300 text-xs sm:text-sm sm:leading-relaxed max-w-2xl">
-            Кожен виріб спроєктовано та надруковано у шкільній майстерні з безпечного еко-пластику PLA. Переглядайте точні 3D-моделі у картках товарів або замовляйте друк за власним <strong class="text-white font-semibold">.STL файлом</strong> чи індивідуальним гравіюванням!
+            Кожен виріб спроєктовано та надруковано у шкільній майстерні з безпечного еко-пластику PLA. Переглядайте точні 3D-моделі у картках товарів або замовляйте друк за власним <strong class="text-white font-semibold">.STL або .3MF файлом</strong> чи індивідуальним гравіюванням!
           </p>
 
           <div class="flex flex-wrap gap-2.5 sm:gap-3 pt-1.5 w-full sm:w-auto">
@@ -279,7 +281,7 @@
             </a>
             <button onclick="openCustomOrderModal()" class="flex-1 sm:flex-none justify-center px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white border border-amber-400/40 backdrop-blur-md font-semibold text-xs sm:text-sm transition-all duration-300 hover:-translate-y-0.5 active:scale-95 flex items-center gap-2">
               <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i>
-              <span>Індивідуальний 3D-друк / .STL</span>
+              <span>Індивідуальний 3D-друк / .STL, .3MF</span>
             </button>
           </div>
 
@@ -327,7 +329,7 @@
                 <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-300 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                   <i data-lucide="file-box" class="w-4 h-4"></i>
                 </div>
-                <div class="text-xs font-bold text-white">Власний .STL</div>
+                <div class="text-xs font-bold text-white">Власний .STL / .3MF</div>
                 <p class="text-[10px] text-slate-300 mt-0.5 leading-tight">Друк за вашим файлом або іменний напис</p>
               </div>
             </div>
@@ -488,7 +490,7 @@
         </div>
         <div>
           <h3 class="text-base font-bold text-slate-900">Індивідуальний 3D-друк</h3>
-          <p class="text-[11px] text-slate-500">Іменні брелоки, таблички або власні .STL файли</p>
+          <p class="text-[11px] text-slate-500">Іменні брелоки, таблички або власні .STL / .3MF файли</p>
         </div>
       </div>
 
@@ -496,7 +498,7 @@
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">Тип виробу</label>
           <select id="custom-type" onchange="handleCustomTypeChange(this.value)" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-blue-500">
-            <option value="Власний STL файл для друку">Друк за власним .STL файлом — Договірна</option>
+            <option value="Власний STL файл для друку">Друк за власним .STL / .3MF файлом — Договірна</option>
             <option value="Іменний брелок ліцеїста">Іменний брелок (з гербом/текстом) — 70 ₴</option>
             <option value="Підставка під телефон з власним лого">Підставка під гаджети з іменем — 160 ₴</option>
             <option value="Табличка на двері кабінету/класу">Табличка / вивіска класу — 220 ₴</option>
@@ -992,7 +994,7 @@
                 <i data-lucide="hard-drive" class="w-4 h-4"></i>
               </div>
               <div>
-                <h4 class="text-xs font-black uppercase text-slate-800">Google Диск — Сховище High-Poly 3D-моделей (.STL)</h4>
+                <h4 class="text-xs font-black uppercase text-slate-800">Google Диск — Сховище High-Poly 3D-моделей (.STL / .3MF)</h4>
                 <p class="text-[10px] text-slate-500">Зберігайте оригінальні високополігональні 3D-файли (до 50+ МБ) на Google Диску без стиснення геометрії</p>
               </div>
             </div>
@@ -1001,7 +1003,7 @@
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
             <div>
-              <label class="block font-bold text-slate-700 mb-1">URL Google Apps Script (для авто-вивантаження .STL):</label>
+              <label class="block font-bold text-slate-700 mb-1">URL Google Apps Script (для авто-вивантаження .STL / .3MF):</label>
               <input type="text" id="gdrive-script-url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono">
               <span class="text-[9px] text-slate-500">Необов'язково для звичайних посилань; потрібно лише для автоматичного завантаження файлів з адмінки на ваш Google Диск</span>
             </div>
@@ -1133,11 +1135,11 @@
             <div class="bg-sky-50/70 p-2.5 rounded-xl border border-sky-200/90 space-y-2">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
-                  <label class="block text-[10px] font-bold text-slate-700 mb-0.5">3D-модель (.STL файл з пристрою):</label>
-                  <input type="file" id="new-stl-file" accept=".stl" onchange="handleAdminStlFileSelect(event)" class="w-full text-[10px] text-slate-500 file:mr-1.5 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:font-bold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 cursor-pointer">
+                  <label class="block text-[10px] font-bold text-slate-700 mb-0.5">3D-модель (.STL або .3MF файл з пристрою):</label>
+                  <input type="file" id="new-stl-file" accept=".stl,.3mf" onchange="handleAdminStlFileSelect(event)" class="w-full text-[10px] text-slate-500 file:mr-1.5 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:font-bold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200 cursor-pointer">
                 </div>
                 <div>
-                  <label class="block text-[10px] font-bold text-slate-700 mb-0.5">Резервна 3D-форма (якщо без .STL):</label>
+                  <label class="block text-[10px] font-bold text-slate-700 mb-0.5">Резервна 3D-форма (якщо без .STL / .3MF):</label>
                   <select id="new-demo-shape" class="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-xs">
                     <option value="cylinder">Циліндр (брелок, стакан)</option>
                     <option value="wedge">Підставка під гаджет</option>
@@ -1148,12 +1150,12 @@
                 </div>
               </div>
               <div>
-                <label class="block text-[10px] font-bold text-sky-900 mb-0.5">☁️ Або посилання на .STL у Google Диску (High-Poly без обмежень розміру):</label>
+                <label class="block text-[10px] font-bold text-sky-900 mb-0.5">☁️ Або посилання на .STL / .3MF у Google Диску (High-Poly без обмежень розміру):</label>
                 <input type="text" id="new-stl-gdrive-url" oninput="handleAdminGdriveUrlInput(this.value)" placeholder="https://drive.google.com/file/d/.../view або ID файлу Google Drive" class="w-full px-2.5 py-1.5 bg-white border border-sky-300 rounded-lg text-[11px] font-mono focus:ring-2 focus:ring-sky-500 outline-none">
-                <span class="text-[9px] text-slate-500 block mt-0.5">Завантажте .STL на Google Диск («Усі, хто має посилання») і вставте посилання сюди — або оберіть файл вище</span>
+                <span class="text-[9px] text-slate-500 block mt-0.5">Завантажте .STL або .3MF на Google Диск («Усі, хто має посилання») і вставте посилання сюди — або оберіть файл вище</span>
               </div>
               <div id="edit-stl-status-bar" class="hidden flex items-center justify-between gap-1 bg-blue-50 border border-blue-200 rounded-md px-2 py-1 text-[10px] text-blue-800">
-                <span id="edit-stl-status-text" class="truncate font-semibold">✅ .STL прикріплено</span>
+                <span id="edit-stl-status-text" class="truncate font-semibold">✅ 3D-модель (.STL / .3MF) прикріплено</span>
                 <div class="flex items-center gap-1.5 shrink-0">
                   <button type="button" onclick="previewAdminFormStl()" class="text-blue-700 hover:text-blue-900 font-bold underline" title="Перевірити 3D-модель">👁️ Тест 3D</button>
                   <button type="button" onclick="clearEditingProductStl()" class="text-rose-600 hover:text-rose-800 font-bold" title="Видалити прикріплений STL">✕</button>
@@ -1999,11 +2001,34 @@
       }
     }
 
-    // 100% БЕЗВТРАТНА (Lossless) підготовка Binary STL:
+    // Визначення формату 3MF (ZIP-контейнер з сигнатурою PK)
+    function is3mfArrayBuffer(buffer) {
+      if (!buffer || buffer.byteLength < 4) return false;
+      const bytes = new Uint8Array(buffer, 0, 4);
+      return bytes[0] === 0x50 && bytes[1] === 0x4b && (bytes[2] === 0x03 || bytes[2] === 0x05 || bytes[2] === 0x07);
+    }
+
+    function is3mfFileName(nameOrUrl) {
+      if (!nameOrUrl || typeof nameOrUrl !== "string") return false;
+      const lower = nameOrUrl.toLowerCase();
+      if (lower.startsWith("data:application/x-gzip-3mf") || lower.startsWith("data:model/3mf") || lower.includes("3dmanufacturing")) {
+        return true;
+      }
+      const clean = lower.split(/[?#]/)[0];
+      return clean.endsWith(".3mf");
+    }
+
+    function detectModelFormat(buffer, nameOrUrl = "") {
+      if (is3mfArrayBuffer(buffer) || is3mfFileName(nameOrUrl)) return "3mf";
+      return "stl";
+    }
+
+    // 100% БЕЗВТРАТНА (Lossless) підготовка Binary STL / 3MF:
+    // Якщо файл .3MF — повертає оригінальний буфер байт-у-байт без жодних змін!
     // Якщо файл уже бінарний STL — повертає оригінальний буфер байт-у-байт без ЖОДНИХ змін координат чи полігонів!
     // Якщо файл текстовий (ASCII STL) — конвертує його у точний 32-бітний Float32 Binary STL без округлення і без видалення трикутників.
     function ensureLosslessBinaryStl(rawBuffer) {
-      if (!rawBuffer || rawBuffer.byteLength < 84) return rawBuffer;
+      if (!rawBuffer || rawBuffer.byteLength < 84 || is3mfArrayBuffer(rawBuffer)) return rawBuffer;
       try {
         const dvCheck = new DataView(rawBuffer);
         const expectedTris = dvCheck.getUint32(80, true);
@@ -2070,9 +2095,11 @@
       return rawBuffer;
     }
 
-    // Безвтратне Gzip-стиснення точного буфера моделі для збереження у Firebase
+    // Безвтратне Gzip-стиснення точного буфера моделі (.STL / .3MF) для збереження у Firebase
     async function compressBufferToCloudStlDataUrl(arrayBuffer, mimeHint = "stl") {
       if (!arrayBuffer) return null;
+      const is3mf = mimeHint === "3mf" || is3mfArrayBuffer(arrayBuffer);
+      const effectiveHint = is3mf ? "3mf" : mimeHint;
       if (typeof CompressionStream !== "undefined") {
         try {
           const cs = new CompressionStream("gzip");
@@ -2081,13 +2108,14 @@
           writer.close();
           const gzBuf = await new Response(cs.readable).arrayBuffer();
           if (gzBuf.byteLength < arrayBuffer.byteLength) {
-            return `data:application/x-gzip-${mimeHint};base64,` + arrayBufferToBase64(gzBuf);
+            return `data:application/x-gzip-${effectiveHint};base64,` + arrayBufferToBase64(gzBuf);
           }
         } catch (e) {
           console.warn("Gzip compression fallback:", e);
         }
       }
-      return `data:application/sla;base64,` + arrayBufferToBase64(arrayBuffer);
+      const rawMime = is3mf ? "model/3mf" : "application/sla";
+      return `data:${rawMime};base64,` + arrayBufferToBase64(arrayBuffer);
     }
 
     // Розпакування data: URL (підтримує як Gzip `data:application/x-gzip-...`, так і звичайний `data:application/sla;base64,...`)
@@ -2165,7 +2193,9 @@
     }
 
     function isValidStlArrayBuffer(buf) {
-      if (!buf || buf.byteLength < 84) return false;
+      if (!buf || buf.byteLength < 22) return false;
+      if (is3mfArrayBuffer(buf)) return true;
+      if (buf.byteLength < 84) return false;
       const bytes = new Uint8Array(buf, 0, Math.min(256, buf.byteLength));
       let headStr = "";
       for (let i = 0; i < Math.min(120, bytes.length); i++) {
@@ -2463,16 +2493,17 @@
         }
       }
 
-      // 3. Якщо це статичний шлях (models/*.stl або http...) — спочатку завантажуємо оригінальний файл через fetch (на GitHub Pages),
+      // 3. Якщо це статичний шлях (models/*.stl, models/*.3mf або http...) — спочатку завантажуємо оригінальний файл через fetch (на GitHub Pages),
       // а якщо файл недоступний офлайн — беремо з BUILTIN_STL_ARCHIVE
       const normPath = String(stlRef).replace(/^\.?\//, "").trim();
-      if (typeof stlRef === "string" && (stlRef.startsWith("http") || normPath.endsWith(".stl"))) {
+      const normLower = normPath.toLowerCase();
+      if (typeof stlRef === "string" && (stlRef.startsWith("http") || normLower.endsWith(".stl") || normLower.endsWith(".3mf"))) {
         try {
           const res = await fetch(stlRef);
           if (res.ok) {
             const buf = await res.arrayBuffer();
-            if (buf && buf.byteLength >= 84) {
-              return { buffer: buf, fileName: normPath.split("/").pop() || "model.stl" };
+            if (buf && (buf.byteLength >= 84 || is3mfArrayBuffer(buf))) {
+              return { buffer: buf, fileName: normPath.split("/").pop() || (is3mfArrayBuffer(buf) ? "model.3mf" : "model.stl") };
             }
           }
         } catch (e) {}
@@ -2577,7 +2608,7 @@
         (productId && DEFAULT_STL_MAP[productId])
       );
 
-      if (hasStlTarget && typeof THREE.STLLoader !== 'undefined') {
+      if (hasStlTarget && (typeof THREE.STLLoader !== 'undefined' || typeof THREE.ThreeMFLoader !== 'undefined')) {
         if (hintEl) hintEl.innerText = "⏳ Завантаження 3D-моделі...";
         try {
           let resolved = null;
@@ -2590,27 +2621,95 @@
           }
           if (!stlScene) return;
           if (resolved && resolved.buffer) {
-            const loader = new THREE.STLLoader();
-            const geometry = loader.parse(resolved.buffer);
-            geometry.center();
-            computeSmoothCreaseNormals(geometry, 38);
-            geometry.computeBoundingBox();
-            const box = geometry.boundingBox;
-            const maxDim = Math.max(box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z);
-            const scale = 26 / (maxDim || 1);
+            const modelFormat = detectModelFormat(resolved.buffer, resolved.fileName || stlUrl);
 
-            if (currentStlMesh) stlScene.remove(currentStlMesh);
-            currentStlMesh = new THREE.Mesh(geometry, material);
-            currentStlMesh.scale.set(scale, scale, scale);
-            currentStlMesh.position.y = 0;
-            stlScene.add(currentStlMesh);
-            if (hintEl) hintEl.innerText = "🔄 Обертайте мишкою / пальцем";
+            if (modelFormat === "3mf" && typeof THREE.ThreeMFLoader !== 'undefined') {
+              const loader3mf = new THREE.ThreeMFLoader();
+              const group = loader3mf.parse(resolved.buffer);
+              // 3MF використовує Z-up; повертаємо модель на -90° по осі X під Y-up сцену Three.js
+              group.rotation.x = -Math.PI / 2;
+              group.updateMatrixWorld(true);
+
+              let meshCount = 0;
+              group.traverse((child) => {
+                if (child.isMesh) {
+                  meshCount++;
+                  if (child.geometry && !child.geometry.attributes.normal) {
+                    computeSmoothCreaseNormals(child.geometry, 38);
+                  }
+                  const mat = child.material;
+                  const hasVertexColors = Boolean(child.geometry && child.geometry.attributes && child.geometry.attributes.color);
+                  const hasCustomMatColor = Boolean(
+                    mat && !Array.isArray(mat) && mat.color &&
+                    mat.color.getHex() !== 0xffffff && mat.color.getHex() !== 0xaaaaaa
+                  );
+                  if (hasVertexColors || hasCustomMatColor) {
+                    if (Array.isArray(mat)) {
+                      mat.forEach(m => { if (m) { m.roughness = 0.35; m.metalness = 0.1; } });
+                    } else if (mat) {
+                      mat.roughness = 0.35;
+                      mat.metalness = 0.1;
+                    }
+                  } else {
+                    child.material = material;
+                  }
+                }
+              });
+
+              if (meshCount === 0) {
+                throw new Error("3MF не містить 3D-геометрії");
+              }
+
+              const box = new THREE.Box3().setFromObject(group);
+              const size = new THREE.Vector3();
+              const center = new THREE.Vector3();
+              box.getSize(size);
+              box.getCenter(center);
+              const maxDim = Math.max(size.x, size.y, size.z) || 1;
+              const scale = 26 / maxDim;
+
+              const wrapper = new THREE.Group();
+              group.position.sub(center);
+              wrapper.add(group);
+              wrapper.scale.set(scale, scale, scale);
+              wrapper.position.y = 0;
+
+              if (currentStlMesh) {
+                disposeObject3D(currentStlMesh);
+                stlScene.remove(currentStlMesh);
+              }
+              currentStlMesh = wrapper;
+              stlScene.add(currentStlMesh);
+              if (hintEl) hintEl.innerText = "🔄 3MF • Обертайте мишкою / пальцем";
+            } else if (typeof THREE.STLLoader !== 'undefined') {
+              const loader = new THREE.STLLoader();
+              const geometry = loader.parse(resolved.buffer);
+              geometry.center();
+              computeSmoothCreaseNormals(geometry, 38);
+              geometry.computeBoundingBox();
+              const box = geometry.boundingBox;
+              const maxDim = Math.max(box.max.x - box.min.x, box.max.y - box.min.y, box.max.z - box.min.z);
+              const scale = 26 / (maxDim || 1);
+
+              if (currentStlMesh) {
+                disposeObject3D(currentStlMesh);
+                stlScene.remove(currentStlMesh);
+              }
+              currentStlMesh = new THREE.Mesh(geometry, material);
+              currentStlMesh.scale.set(scale, scale, scale);
+              currentStlMesh.position.y = 0;
+              stlScene.add(currentStlMesh);
+              if (hintEl) hintEl.innerText = "🔄 Обертайте мишкою / пальцем";
+            } else {
+              createDefaultShape();
+              if (hintEl) hintEl.innerText = "🔄 Обертайте пальцем";
+            }
           } else {
             createDefaultShape();
             if (hintEl) hintEl.innerText = "🔄 Обертайте пальцем";
           }
         } catch (err) {
-          console.warn("Помилка розбору STL, показано базову форму:", err);
+          console.warn("Помилка розбору 3D-моделі (.STL/.3MF), показано базову форму:", err);
           if (stlScene) createDefaultShape();
           if (hintEl) hintEl.innerText = "🔄 Обертайте пальцем";
         }
@@ -2619,10 +2718,42 @@
       }
     }
 
+    function disposeObject3D(obj) {
+      if (!obj) return;
+      if (typeof obj.traverse === "function") {
+        obj.traverse((child) => {
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) {
+            if (Array.isArray(child.material)) {
+              child.material.forEach(m => m && typeof m.dispose === "function" && m.dispose());
+            } else if (typeof child.material.dispose === "function") {
+              child.material.dispose();
+            }
+          }
+        });
+      } else {
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material && typeof obj.material.dispose === "function") obj.material.dispose();
+      }
+    }
+
     function updateViewerColor(colorName) {
-      if (!currentStlMesh || !currentStlMesh.material) return;
+      if (!currentStlMesh) return;
       const hex = FILAMENT_HEX[colorName] || 0x2563eb;
-      currentStlMesh.material.color.setHex(hex);
+      if (currentStlMesh.material && currentStlMesh.material.color) {
+        currentStlMesh.material.color.setHex(hex);
+      }
+      if (typeof currentStlMesh.traverse === "function") {
+        currentStlMesh.traverse((child) => {
+          if (child.isMesh && child.material) {
+            if (Array.isArray(child.material)) {
+              child.material.forEach(m => { if (m && m.color) m.color.setHex(hex); });
+            } else if (child.material.color) {
+              child.material.color.setHex(hex);
+            }
+          }
+        });
+      }
     }
 
     function disposeStlViewer() {
@@ -2633,8 +2764,7 @@
         resizeObserver = null;
       }
       if (currentStlMesh) {
-        if (currentStlMesh.geometry) currentStlMesh.geometry.dispose();
-        if (currentStlMesh.material) currentStlMesh.material.dispose();
+        disposeObject3D(currentStlMesh);
         currentStlMesh = null;
       }
       if (stlRenderer) {
@@ -3697,12 +3827,12 @@
               const safeName = (f.attachedFileName || "model.stl").replace(/'/g, "\'");
               const hasCloudFile = Boolean(f.stlDataUrl || f.orderFileId);
               if (hasCloudFile) {
-                const isStl = safeName.toLowerCase().endsWith(".stl");
+                const isPreviewable3d = safeName.toLowerCase().endsWith(".stl") || safeName.toLowerCase().endsWith(".3mf");
                 return `
                   <div class="inline-flex items-center gap-1 mt-1 mr-1.5 bg-blue-50 border border-blue-200 rounded-lg px-2 py-0.5 text-[10px] text-blue-800">
                     <span>📎 <strong>${f.attachedFileName || '3D-файл'}</strong></span>
                     <button type="button" onclick="downloadOrderStlFromCloud('${ord.firebaseKey}', ${idx}, '${f.orderFileId || ''}', '${safeName}')" class="px-1.5 py-0.2 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold transition">Завантажити</button>
-                    ${isStl ? `<button type="button" onclick="previewOrderStlInModal('${ord.firebaseKey}', ${idx}, '${f.orderFileId || ''}', '${safeName}')" class="px-1.5 py-0.2 bg-slate-800 hover:bg-slate-900 text-white rounded font-bold transition">3D-огляд</button>` : ''}
+                    ${isPreviewable3d ? `<button type="button" onclick="previewOrderStlInModal('${ord.firebaseKey}', ${idx}, '${f.orderFileId || ''}', '${safeName}')" class="px-1.5 py-0.2 bg-slate-800 hover:bg-slate-900 text-white rounded font-bold transition">3D-огляд</button>` : ''}
                   </div>
                 `;
               }
@@ -4509,7 +4639,8 @@
       }
       try {
         let rawBuf = await file.arrayBuffer();
-        if (file.name.toLowerCase().endsWith(".stl")) {
+        const is3mfCustomer = file.name.toLowerCase().endsWith(".3mf") || is3mfArrayBuffer(rawBuf);
+        if (file.name.toLowerCase().endsWith(".stl") && !is3mfCustomer) {
           rawBuf = ensureLosslessBinaryStl(rawBuf);
         }
         if (gdriveScriptUrl && gdriveScriptUrl.startsWith("https://script.google.com/")) {
@@ -4527,7 +4658,7 @@
             console.warn("Customer Google Drive upload fallback:", gdErr);
           }
         }
-        pendingCustomerStlDataUrl = await compressBufferToCloudStlDataUrl(rawBuf, "stl");
+        pendingCustomerStlDataUrl = await compressBufferToCloudStlDataUrl(rawBuf, is3mfCustomer ? "3mf" : "stl");
         const cloudKb = pendingCustomerStlDataUrl ? Math.round(pendingCustomerStlDataUrl.length / 1024) : Math.round(rawBuf.byteLength / 1024);
         if (bar && txt) {
           txt.innerText = `✅ Готово: ${file.name} (${cloudKb} КБ у хмарі без втрати якості)`;
@@ -4568,10 +4699,11 @@
           orderFileId = `ordfile_${Date.now()}_${Math.floor(100 + Math.random() * 899)}`;
           try {
             let rawBuf = await customerFileObj.arrayBuffer();
-            if (attachedFileName.toLowerCase().endsWith(".stl")) {
+            const is3mfAttach = attachedFileName.toLowerCase().endsWith(".3mf") || is3mfArrayBuffer(rawBuf);
+            if (attachedFileName.toLowerCase().endsWith(".stl") && !is3mfAttach) {
               rawBuf = ensureLosslessBinaryStl(rawBuf);
             }
-            stlDataUrl = pendingCustomerStlDataUrl || await compressBufferToCloudStlDataUrl(rawBuf, "stl");
+            stlDataUrl = pendingCustomerStlDataUrl || await compressBufferToCloudStlDataUrl(rawBuf, is3mfAttach ? "3mf" : "stl");
             await saveStlRecordToIdb(STL_IDB_STORE_ORDERS, orderFileId, {
               buffer: rawBuf,
               fileName: attachedFileName
@@ -4593,7 +4725,7 @@
       else if (type.includes("95")) price = 95;
       else if (type.includes("70")) price = 70;
 
-      const titleName = isCustomFile ? "Друк за власним .STL файлом" : `Кастом: ${type.split('—')[0].trim()}`;
+      const titleName = isCustomFile ? (attachedFileName.toLowerCase().endsWith(".3mf") ? "Друк за власним .3MF файлом" : "Друк за власним .STL / .3MF файлом") : `Кастом: ${type.split('—')[0].trim()}`;
       let noteDetails = text || '';
       if (attachedFileName) {
         noteDetails = `Файл: ${attachedFileName} (${attachedFileSize}). ${noteDetails}`;
@@ -4998,8 +5130,9 @@
           }
         }
         if (buf && !item.stlDataUrl) {
-          const exactBuf = fName.toLowerCase().endsWith(".stl") ? ensureLosslessBinaryStl(buf) : buf;
-          item.stlDataUrl = await compressBufferToCloudStlDataUrl(exactBuf, "stl");
+          const is3mfOrder = fName.toLowerCase().endsWith(".3mf") || is3mfArrayBuffer(buf);
+          const exactBuf = (fName.toLowerCase().endsWith(".stl") && !is3mfOrder) ? ensureLosslessBinaryStl(buf) : buf;
+          item.stlDataUrl = await compressBufferToCloudStlDataUrl(exactBuf, is3mfOrder ? "3mf" : "stl");
         }
       }
 
@@ -5387,11 +5520,12 @@
           txt.innerText = `☁️ Google Drive High-Poly STL (ID: ${gdId.slice(0, 12)}...)`;
           bar.classList.remove("hidden");
         }
-      } else if (trimmed.startsWith("http") || trimmed.endsWith(".stl")) {
+      } else if (trimmed.startsWith("http") || trimmed.toLowerCase().endsWith(".stl") || trimmed.toLowerCase().endsWith(".3mf")) {
         pendingAdminGdriveRef = trimmed;
+        const fmtTag = is3mfFileName(trimmed) ? ".3MF" : ".STL";
         if (bar && txt) {
           bar.className = "flex items-center justify-between gap-1 bg-sky-100 border border-sky-300 rounded-md px-2 py-1 text-[10px] text-sky-900";
-          txt.innerText = `🔗 Зовнішнє посилання .STL: ${trimmed.split('/').pop()}`;
+          txt.innerText = `🔗 Зовнішнє посилання ${fmtTag}: ${trimmed.split('/').pop()}`;
           bar.classList.remove("hidden");
         }
       }
@@ -5416,7 +5550,8 @@
       }
       try {
         const rawBuf = await file.arrayBuffer();
-        const losslessBuf = ensureLosslessBinaryStl(rawBuf);
+        const is3mf = file.name.toLowerCase().endsWith(".3mf") || is3mfArrayBuffer(rawBuf);
+        const losslessBuf = is3mf ? rawBuf : ensureLosslessBinaryStl(rawBuf);
         pendingAdminStlBuffer = losslessBuf;
         pendingAdminStlFileName = file.name;
 
@@ -5434,7 +5569,7 @@
               if (gdInput) gdInput.value = gdRes.viewUrl || `https://drive.google.com/file/d/${gdRes.fileId}/view`;
               if (bar && txt) {
                 bar.className = "flex items-center justify-between gap-1 bg-emerald-50 border border-emerald-300 rounded-md px-2 py-1 text-[10px] text-emerald-900";
-                txt.innerText = `✅ На Google Диску: ${file.name} (${origKb} КБ, 100% High-Poly)`;
+                txt.innerText = `✅ На Google Диску: ${file.name} (${origKb} КБ, ${is3mf ? '3MF' : 'High-Poly STL'})`;
               }
               showToast(`☁️ Файл «${file.name}» збережено на ваш Google Диск!`);
               return;
@@ -5444,19 +5579,19 @@
           }
         }
 
-        const compressedDataUrl = await compressBufferToCloudStlDataUrl(losslessBuf, "stl");
+        const compressedDataUrl = await compressBufferToCloudStlDataUrl(losslessBuf, is3mf ? "3mf" : "stl");
         pendingAdminStlDataUrl = compressedDataUrl;
         const cloudKb = compressedDataUrl ? Math.round(compressedDataUrl.length / 1024) : Math.round(losslessBuf.byteLength / 1024);
         if (bar && txt) {
-          txt.innerText = `✅ ${file.name} (${origKb} КБ → ${cloudKb} КБ Gzip, 100% полігонів без втрат)`;
+          txt.innerText = `✅ ${file.name} (${origKb} КБ → ${cloudKb} КБ, ${is3mf ? '3MF' : 'Gzip STL'} 100% без втрат)`;
         }
       } catch (err) {
-        console.warn("Admin STL read error:", err);
-        showToast("Помилка читання .STL файлу");
+        console.warn("Admin 3D file read error:", err);
+        showToast("Помилка читання 3D-файлу (.STL / .3MF)");
       }
     }
 
-    function openStandaloneStlPreviewModal(titleText = "Перевірка 3D-моделі (.STL)") {
+    function openStandaloneStlPreviewModal(titleText = "Перевірка 3D-моделі (.STL / .3MF)") {
       const modal = document.getElementById("quickview-modal");
       const content = document.getElementById("quickview-content");
       if (!modal || !content) return;
@@ -5510,7 +5645,7 @@
           }
         }
       }
-      showToast("Спочатку оберіть .STL файл");
+      showToast("Спочатку оберіть .STL або .3MF файл");
     }
 
     function clearEditingProductStl() {
@@ -5527,7 +5662,7 @@
       const txt = document.getElementById("edit-stl-status-text");
       if (bar && txt) {
         bar.className = "mt-1 flex items-center justify-between gap-1 bg-rose-50 border border-rose-200 rounded-md px-2 py-0.5 text-[10px] text-rose-700";
-        txt.innerText = "🗑️ .STL буде видалено при збереженні";
+        txt.innerText = "🗑️ 3D-модель буде видалено при збереженні";
       }
     }
 
@@ -5651,7 +5786,7 @@
           stlBar.classList.remove("hidden");
         } else if (prod.stlUrl || (prod.stlChunks && prod.stlChunks.length)) {
           stlBar.className = "flex items-center justify-between gap-1 bg-blue-50 border border-blue-200 rounded-md px-2 py-1 text-[10px] text-blue-800";
-          stlText.innerText = `✅ 3D-модель (.STL) прикріплена${prod.stlFileName ? ': ' + prod.stlFileName : ''}`;
+          stlText.innerText = `✅ 3D-модель (${is3mfFileName(prod.stlFileName || prod.stlUrl) ? '.3MF' : '.STL'}) прикріплена${prod.stlFileName ? ': ' + prod.stlFileName : ''}`;
           stlBar.classList.remove("hidden");
         } else {
           stlBar.classList.add("hidden");
@@ -5818,7 +5953,7 @@
                     <span class="text-slate-400">•</span>
                     <span class="text-slate-500 truncate">${prod.category}</span>
                     ${prod.author ? `<span class="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded font-medium">👤 ${prod.author}</span>` : ''}
-                    ${prod.hasLegacyLowPolyStl ? '<span class="text-[9px] bg-amber-100 text-amber-800 border border-amber-300 px-1.5 py-0.2 rounded font-black" title="Стара спрощена модель — оновіть файл або додайте посилання Google Drive">⚠️ Оновіть STL</span>' : (extractGoogleDriveFileId(prod.stlUrl) ? '<span class="text-[9px] bg-sky-100 text-sky-800 border border-sky-300 px-1.5 py-0.2 rounded font-black">☁️ GDrive 3D</span>' : ((prod.stlUrl || (prod.stlChunks && prod.stlChunks.length)) ? '<span class="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded font-black">3D STL</span>' : ''))}
+                    ${prod.hasLegacyLowPolyStl ? '<span class="text-[9px] bg-amber-100 text-amber-800 border border-amber-300 px-1.5 py-0.2 rounded font-black" title="Стара спрощена модель — оновіть файл або додайте посилання Google Drive">⚠️ Оновіть STL</span>' : (extractGoogleDriveFileId(prod.stlUrl) ? '<span class="text-[9px] bg-sky-100 text-sky-800 border border-sky-300 px-1.5 py-0.2 rounded font-black">☁️ GDrive 3D</span>' : ((prod.stlUrl || (prod.stlChunks && prod.stlChunks.length)) ? (is3mfFileName(prod.stlFileName || prod.stlUrl) ? '<span class="text-[9px] bg-indigo-100 text-indigo-700 px-1.5 py-0.2 rounded font-black">3D 3MF</span>' : '<span class="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded font-black">3D STL</span>') : ''))}
                   </div>
                 </div>
               </div>
@@ -5853,14 +5988,15 @@
       if (parsedGdriveId) {
         uploadedStlDataUrl = `gdrive://${parsedGdriveId}`;
         if (!uploadedStlName) uploadedStlName = `gdrive_${parsedGdriveId.slice(0, 8)}.stl`;
-      } else if (rawGdriveVal && (rawGdriveVal.startsWith("http") || rawGdriveVal.endsWith(".stl"))) {
+      } else if (rawGdriveVal && (rawGdriveVal.startsWith("http") || rawGdriveVal.toLowerCase().endsWith(".stl") || rawGdriveVal.toLowerCase().endsWith(".3mf"))) {
         uploadedStlDataUrl = rawGdriveVal;
-        if (!uploadedStlName) uploadedStlName = rawGdriveVal.split("/").pop() || "model.stl";
+        if (!uploadedStlName) uploadedStlName = rawGdriveVal.split("/").pop() || (is3mfFileName(rawGdriveVal) ? "model.3mf" : "model.stl");
       } else if (!uploadedStlBuffer && stlFileInput && stlFileInput.files && stlFileInput.files[0]) {
         const f = stlFileInput.files[0];
         uploadedStlName = f.name;
         const rawBuf = await f.arrayBuffer();
-        uploadedStlBuffer = ensureLosslessBinaryStl(rawBuf);
+        const is3mf = f.name.toLowerCase().endsWith(".3mf") || is3mfArrayBuffer(rawBuf);
+        uploadedStlBuffer = is3mf ? rawBuf : ensureLosslessBinaryStl(rawBuf);
         if (gdriveScriptUrl && gdriveScriptUrl.startsWith("https://script.google.com/")) {
           try {
             const gdRes = await uploadStlBufferToGoogleDrive(uploadedStlBuffer, f.name);
@@ -5870,10 +6006,11 @@
           } catch (err) {}
         }
         if (!uploadedStlDataUrl) {
-          uploadedStlDataUrl = await compressBufferToCloudStlDataUrl(uploadedStlBuffer, "stl");
+          uploadedStlDataUrl = await compressBufferToCloudStlDataUrl(uploadedStlBuffer, is3mf ? "3mf" : "stl");
         }
       } else if (uploadedStlBuffer && !uploadedStlDataUrl) {
-        uploadedStlDataUrl = await compressBufferToCloudStlDataUrl(uploadedStlBuffer, "stl");
+        const is3mf = is3mfArrayBuffer(uploadedStlBuffer) || is3mfFileName(uploadedStlName);
+        uploadedStlDataUrl = await compressBufferToCloudStlDataUrl(uploadedStlBuffer, is3mf ? "3mf" : "stl");
       }
 
       const titleVal = document.getElementById("new-title").value.trim();
